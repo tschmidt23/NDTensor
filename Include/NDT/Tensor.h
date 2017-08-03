@@ -1366,7 +1366,7 @@ public:
     // copy constructor and assignment operator, not valid for managed or const tensors
     template <bool _Const>
     __host__ __device__  Tensor(Tensor<D,T,R,_Const> & other)
-        : dimensions_(other.dimensions()), data_(other.data()) {
+        : dimensions_(other.dimensions()), data_(other.Data()) {
         static_assert(Const || !_Const,
                       "Cannot copy-construct a non-const Tensor from a Const tensor");
     }
@@ -1376,7 +1376,7 @@ public:
         static_assert(Const || !_Const,
                       "Cannot assign a non-const Tensor from a Const tensor");
         dimensions_ = other.dimensions();
-        data_ = other.data();
+        data_ = other.Data();
         return *this;
     }
 
@@ -1385,14 +1385,14 @@ public:
     // conversion to const tensor
     template <bool _Const = Const, typename std::enable_if<!_Const,int>::type = 0>
     inline operator Tensor<D,T,R,true>() const {
-        return Tensor<D,T,R,true>( dimensions(), data() );
+        return Tensor<D,T,R,true>( dimensions(), Data() );
     }
 
     template <typename U = T,
               typename std::enable_if<!Const && sizeof(U), int>::type = 0>
-    inline __host__ __device__ T * data() { return data_; }
+    inline __host__ __device__ T * Data() { return data_; }
 
-    inline __host__ __device__ const T * data() const { return data_; }
+    inline __host__ __device__ const T * Data() const { return data_; }
 
     // -=-=-=-=-=-=- sizing functions -=-=-=-=-=-=-
     inline __host__ __device__ DimT dimensionSize(const IdxT dim) const {
@@ -1418,13 +1418,13 @@ public:
         return dimensions_(1);
     }
 
-    inline __host__ __device__ std::size_t count() const {
+    inline __host__ __device__ std::size_t Count() const {
 //        return internal::count<DimT,D>(dimensions_);
         return dimensions_.prod();
     }
 
     inline __host__ __device__ std::size_t sizeBytes() const {
-        return count() * sizeof(T);
+        return Count() * sizeof(T);
     }
 
     // -=-=-=-=-=-=- indexing functions -=-=-=-=-=-=-
@@ -1855,7 +1855,7 @@ public:
     inline void copyFrom(const Tensor<D,T,R2,Const2> & other) {
         static_assert(!Const,"you cannot copy to a const tensor");
         internal::EquivalenceChecker<Check>::template checkEquivalentSize<DimT,D>(dimensions(),other.dimensions());
-        internal::Copier<T,R,R2>::copy(data_,other.data(),count());
+        internal::Copier<T,R,R2>::copy(data_,other.Data(),Count());
     }
 
 protected:

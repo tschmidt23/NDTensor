@@ -14,31 +14,31 @@ template <size_t... N>
 struct IntegerListConstructor {
     template <size_t M>
     struct PushBack {
-        typedef IntegerListConstructor<N...,M> type;
+        typedef IntegerListConstructor<N...,M> Type;
     };
 };
 
 template <size_t Max>
 struct IntegerList {
-    typedef typename IntegerList<Max-1>::type::template PushBack<Max>::type type;
+    typedef typename IntegerList<Max-1>::Type::template PushBack<Max>::Type Type;
 };
 
 template <>
 struct IntegerList<0> {
-    typedef IntegerListConstructor<> type;
+    typedef IntegerListConstructor<> Type;
 };
 
 template <size_t...Indices, typename Tuple>
-__host__ __device__ inline auto tupleSubset(const Tuple & tuple, IntegerListConstructor<Indices...>)
+__host__ __device__ inline auto TupleSubset(const Tuple & tuple, IntegerListConstructor<Indices...>)
     -> decltype(std::make_tuple(std::get<Indices>(tuple)...)) {
     return std::make_tuple(std::get<Indices>(tuple)...);
 }
 
 template <typename Head, typename ... Tail>
 __host__ __device__
-inline std::tuple<Tail...> tail(const std::tuple<Head,Tail...> & t) {
+inline std::tuple<Tail...> GetTail(const std::tuple<Head,Tail...> & t) {
 
-    return tupleSubset(t, typename IntegerList<sizeof...(Tail)>::type());
+    return TupleSubset(t, typename IntegerList<sizeof...(Tail)>::Type());
 
 }
 
@@ -50,7 +50,7 @@ template <typename T>
 struct TupleReverser<std::tuple<T> > {
     using Type = std::tuple<T>;
 
-    static __host__ __device__ inline Type reverse(const std::tuple<T> & t) {
+    static __host__ __device__ inline Type Reverse(const std::tuple<T> & t) {
         return t;
     }
 
@@ -64,9 +64,9 @@ struct TupleReverser<std::tuple<Head,Tail...> > {
 
     using Type = decltype(std::tuple_cat(std::declval<TailTuple>(), std::declval<HeadTuple>()));
 
-    static __host__ __device__ inline Type reverse(const std::tuple<Head,Tail...> & t) {
+    static __host__ __device__ inline Type Reverse(const std::tuple<Head,Tail...> & t) {
 
-        return std::tuple_cat(TupleReverser<std::tuple<Tail...> >::reverse(tail(t)), std::tuple<Head>(std::get<0>(t)));
+        return std::tuple_cat(TupleReverser<std::tuple<Tail...> >::Reverse(GetTail(t)), std::tuple<Head>(std::get<0>(t)));
 
     }
 
@@ -92,10 +92,10 @@ struct TupleIndexHunter<QueryType,CheckIndex,QueryType,TupleTypes...> {
 template <std::size_t Index, typename ... TupleTypes>
 struct DeviceExecutableTupleCopy {
 
-    static inline __host__ __device__ void copy(std::tuple<TupleTypes...> & destination,
+    static inline __host__ __device__ void Copy(std::tuple<TupleTypes...> & destination,
                                                 const std::tuple<TupleTypes...> & source) {
         std::get<Index>(destination) = std::get<Index>(source);
-        DeviceExecutableTupleCopy<Index-1,TupleTypes...>::copy(destination,source);
+        DeviceExecutableTupleCopy<Index-1,TupleTypes...>::Copy(destination,source);
     }
 
 };
@@ -103,7 +103,7 @@ struct DeviceExecutableTupleCopy {
 template <typename ... TupleTypes>
 struct DeviceExecutableTupleCopy<std::numeric_limits<std::size_t>::max(),TupleTypes...> {
 
-    static inline __host__ __device__ void copy(std::tuple<TupleTypes...> & /*destination*/,
+    static inline __host__ __device__ void Copy(std::tuple<TupleTypes...> & /*destination*/,
                                                 const std::tuple<TupleTypes...> & /*source*/) {
 //        std::get<0>(destination) = std::get<0>(source);
     }
@@ -132,7 +132,7 @@ struct TupledType<Scalar, 1> {
 
 template <typename QueryType, typename ... TupleTypes>
 __host__ __device__ inline
-QueryType & getByType(std::tuple<TupleTypes...> & tuple) {
+QueryType & GetByType(std::tuple<TupleTypes...> & tuple) {
 
     return std::get<internal::TupleIndexHunter<QueryType,0,TupleTypes ...>::Index>(tuple);
 
@@ -140,7 +140,7 @@ QueryType & getByType(std::tuple<TupleTypes...> & tuple) {
 
 template <typename QueryType, typename ... TupleTypes>
 __host__ __device__ inline
-const QueryType & getByType(const std::tuple<TupleTypes...> & tuple) {
+const QueryType & GetByType(const std::tuple<TupleTypes...> & tuple) {
 
     return std::get<internal::TupleIndexHunter<QueryType,0,TupleTypes ...>::Index>(tuple);
 
@@ -148,8 +148,8 @@ const QueryType & getByType(const std::tuple<TupleTypes...> & tuple) {
 
 template <typename ... TupleTypes>
 __host__ __device__ inline
-void copy(std::tuple<TupleTypes...> & destination, const std::tuple<TupleTypes...> & source) {
-    internal::DeviceExecutableTupleCopy<sizeof...(TupleTypes)-1,TupleTypes...>::copy(destination,source);
+void Copy(std::tuple<TupleTypes...> & destination, const std::tuple<TupleTypes...> & source) {
+    internal::DeviceExecutableTupleCopy<sizeof...(TupleTypes)-1,TupleTypes...>::Copy(destination,source);
 }
 
 
@@ -158,7 +158,7 @@ template <typename Derived,
                                   Eigen::internal::traits<Derived>::ColsAtCompileTime == 1,int>::type = 0>
 __host__ __device__ inline
 typename internal::TupledType<typename Eigen::internal::traits<Derived>::Scalar,Eigen::internal::traits<Derived>::RowsAtCompileTime>::Type
-vectorToTuple(const Eigen::MatrixBase<Derived> & vector) {
+VectorToTuple(const Eigen::MatrixBase<Derived> & vector) {
 
     return std::tuple<typename Eigen::internal::traits<Derived>::Scalar>(vector(0));
 
@@ -169,10 +169,10 @@ template <typename Derived,
                                   Eigen::internal::traits<Derived>::ColsAtCompileTime == 1,int>::type = 0>
 __host__ __device__ inline
 typename internal::TupledType<typename Eigen::internal::traits<Derived>::Scalar,Eigen::internal::traits<Derived>::RowsAtCompileTime>::Type
-vectorToTuple(const Eigen::MatrixBase<Derived> & vector) {
+VectorToTuple(const Eigen::MatrixBase<Derived> & vector) {
 
     return std::tuple_cat(std::tuple<typename Eigen::internal::traits<Derived>::Scalar>(vector(0)),
-                          vectorToTuple(vector.template tail<Eigen::internal::traits<Derived>::RowsAtCompileTime-1>()));
+                          VectorToTuple(vector.template tail<Eigen::internal::traits<Derived>::RowsAtCompileTime-1>()));
 
 }
 
