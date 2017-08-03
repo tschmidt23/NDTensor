@@ -67,7 +67,7 @@ struct CopyTypeTraits<DeviceResident,DeviceResident> {
 template <typename T, Residency DestR, Residency SrcR>
 struct Copier {
 
-    inline static void copy(T * dst, const T * src, const std::size_t N) {
+    inline static void Copy(T * dst, const T * src, const std::size_t N) {
         cudaMemcpy(dst,src,N*sizeof(T),CopyTypeTraits<DestR,SrcR>::copyType);
     }
 
@@ -76,7 +76,7 @@ struct Copier {
 template <typename T>
 struct Copier<T,HostResident,HostResident> {
 
-    inline static void copy(T * dst, const T * src, const std::size_t N) {
+    inline static void Copy(T * dst, const T * src, const std::size_t N) {
         std::memcpy(dst,src,N*sizeof(T));
     }
 
@@ -87,7 +87,7 @@ template <bool Check>
 struct EquivalenceChecker {
 
     template <typename DimT, uint D>
-    inline static void checkEquivalentSize(const Eigen::Matrix<DimT,D,1> & /*sizeA*/, const Eigen::Matrix<DimT,D,1> & /*sizeB*/) { }
+    inline static void CheckEquivalentSize(const Eigen::Matrix<DimT,D,1> & /*sizeA*/, const Eigen::Matrix<DimT,D,1> & /*sizeB*/) { }
 
     template <typename T>
     inline static void checkEquivalence(const T & /*A*/, const T & /*B*/) { }
@@ -99,7 +99,7 @@ struct EquivalenceChecker<true> {
 
     template <typename DimT, uint D>
     __attribute__((optimize("unroll-loops")))
-    inline static void checkEquivalentSize(const Eigen::Matrix<DimT,D,1> & sizeA, const Eigen::Matrix<DimT,D,1> & sizeB) {
+    inline static void CheckEquivalentSize(const Eigen::Matrix<DimT,D,1> & sizeA, const Eigen::Matrix<DimT,D,1> & sizeB) {
         for (int d=0; d<D; ++d) {
             if (sizeA(d) != sizeB(d)) {
                 throw std::runtime_error("sizes in dimension " + std::to_string(d) + " do not match: " +
@@ -1366,7 +1366,7 @@ public:
     // copy constructor and assignment operator, not valid for managed or const tensors
     template <bool _Const>
     __host__ __device__  Tensor(Tensor<D,T,R,_Const> & other)
-        : dimensions_(other.dimensions()), data_(other.Data()) {
+        : dimensions_(other.Dimensions()), data_(other.Data()) {
         static_assert(Const || !_Const,
                       "Cannot copy-construct a non-const Tensor from a Const tensor");
     }
@@ -1375,7 +1375,7 @@ public:
     __host__ __device__ inline Tensor<D,T,R,Const> & operator=(const Tensor<D,T,R,_Const> & other) {
         static_assert(Const || !_Const,
                       "Cannot assign a non-const Tensor from a Const tensor");
-        dimensions_ = other.dimensions();
+        dimensions_ = other.Dimensions();
         data_ = other.Data();
         return *this;
     }
@@ -1385,7 +1385,7 @@ public:
     // conversion to const tensor
     template <bool _Const = Const, typename std::enable_if<!_Const,int>::type = 0>
     inline operator Tensor<D,T,R,true>() const {
-        return Tensor<D,T,R,true>( dimensions(), Data() );
+        return Tensor<D,T,R,true>( Dimensions(), Data() );
     }
 
     template <typename U = T,
@@ -1399,7 +1399,7 @@ public:
         return dimensions_(dim);
     }
 
-    inline __host__ __device__ const Eigen::Matrix<DimT,D,1,Eigen::DontAlign> & dimensions() const {
+    inline __host__ __device__ const Eigen::Matrix<DimT,D,1,Eigen::DontAlign> & Dimensions() const {
         return dimensions_;
     }
 
@@ -1423,7 +1423,7 @@ public:
         return dimensions_.prod();
     }
 
-    inline __host__ __device__ std::size_t sizeBytes() const {
+    inline __host__ __device__ std::size_t SizeBytes() const {
         return Count() * sizeof(T);
     }
 
@@ -1852,10 +1852,10 @@ public:
 
     // -=-=-=-=-=-=- copying functions -=-=-=-=-=-=-
     template <Residency R2, bool Const2, bool Check=false>
-    inline void copyFrom(const Tensor<D,T,R2,Const2> & other) {
+    inline void CopyFrom(const Tensor<D,T,R2,Const2> & other) {
         static_assert(!Const,"you cannot copy to a const tensor");
-        internal::EquivalenceChecker<Check>::template checkEquivalentSize<DimT,D>(dimensions(),other.dimensions());
-        internal::Copier<T,R,R2>::copy(data_,other.Data(),Count());
+        internal::EquivalenceChecker<Check>::template CheckEquivalentSize<DimT,D>(Dimensions(),other.Dimensions());
+        internal::Copier<T,R,R2>::Copy(data_,other.Data(),Count());
     }
 
 protected:
