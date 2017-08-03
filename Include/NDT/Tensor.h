@@ -8,7 +8,7 @@
 
 #include <cuda_runtime.h>
 
-#include <df/util/tupleHelpers.h>
+#include <NDT/TupleHelpers.h>
 
 namespace NDT {
 
