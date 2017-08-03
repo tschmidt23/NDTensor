@@ -1395,7 +1395,7 @@ public:
     inline __host__ __device__ const T * Data() const { return data_; }
 
     // -=-=-=-=-=-=- sizing functions -=-=-=-=-=-=-
-    inline __host__ __device__ DimT dimensionSize(const IdxT dim) const {
+    inline __host__ __device__ DimT DimensionSize(const IdxT dim) const {
         return dimensions_(dim);
     }
 
@@ -1404,17 +1404,17 @@ public:
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
-    inline __host__ __device__ DimT length() const {
+    inline __host__ __device__ DimT Length() const {
         return dimensions_(0);
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-    inline __host__ __device__ DimT width() const {
+    inline __host__ __device__ DimT Width() const {
         return dimensions_(0);
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-    inline __host__ __device__ DimT height() const {
+    inline __host__ __device__ DimT Height() const {
         return dimensions_(1);
     }
 
@@ -1679,13 +1679,13 @@ public:
     // -=-=-=-=-=-=- bounds-checking functions -=-=-=-=-=-=-
     template <typename PosT, int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
     inline __host__ __device__ bool inBounds(const PosT d0, const PosT border) const {
-        return (d0 >= border) && (d0 <= dimensionSize(0) - 1 - border);
+        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border);
     }
 
     template <typename PosT, int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
     inline __host__ __device__ bool inBounds(const PosT d0, const PosT d1, const PosT border) const {
-        return (d0 >= border) && (d0 <= dimensionSize(0) - 1 - border) &&
-               (d1 >= border) && (d1 <= dimensionSize(1) - 1 - border);
+        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
+               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border);
     }
 
     template <typename PosT, typename Derived,
@@ -1698,9 +1698,9 @@ public:
 
     template <typename PosT, int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
     inline __host__ __device__ bool inBounds(const PosT d0, const PosT d1, const PosT d2, const PosT border) const {
-        return (d0 >= border) && (d0 <= dimensionSize(0) - 1 - border) &&
-               (d1 >= border) && (d1 <= dimensionSize(1) - 1 - border) &&
-               (d2 >= border) && (d2 <= dimensionSize(2) - 1 - border);
+        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
+               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border) &&
+               (d2 >= border) && (d2 <= DimensionSize(2) - 1 - border);
     }
 
     template <typename PosT, typename Derived,
@@ -1713,10 +1713,10 @@ public:
 
     template <typename PosT, int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
     inline __host__ __device__ bool inBounds(const PosT d0, const PosT d1, const PosT d2, const PosT d3, const PosT border) const {
-        return (d0 >= border) && (d0 <= dimensionSize(0) - 1 - border) &&
-               (d1 >= border) && (d1 <= dimensionSize(1) - 1 - border) &&
-               (d2 >= border) && (d2 <= dimensionSize(2) - 1 - border) &&
-               (d3 >= border) && (d3 <= dimensionSize(3) - 1 - border);
+        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
+               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border) &&
+               (d2 >= border) && (d2 <= DimensionSize(2) - 1 - border) &&
+               (d3 >= border) && (d3 <= DimensionSize(3) - 1 - border);
     }
 
     template <typename PosT, typename Derived,
