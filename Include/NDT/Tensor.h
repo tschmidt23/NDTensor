@@ -235,14 +235,14 @@ inline __host__ __device__ IndexList<T,4> IndexList4(const T i0, const T i1, con
 }
 
 template <typename IdxT, typename DimT, int D>
-inline __host__ __device__ std::size_t offsetXD(const IndexList<IdxT,D> dimIndices, const IndexList<DimT,D-1> dimSizes) {
+inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,D> dimIndices, const IndexList<DimT,D-1> dimSizes) {
 
-    return dimIndices.head + dimSizes.head*offsetXD(dimIndices.tail,dimSizes.tail);
+    return dimIndices.head + dimSizes.head*OffsetXD(dimIndices.tail,dimSizes.tail);
 
 }
 
 template <typename IdxT, typename DimT>
-inline __host__ __device__ std::size_t offsetXD(const IndexList<IdxT,1> dimIndices, const IndexList<DimT,0> dimSizes) {
+inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndices, const IndexList<DimT,0> dimSizes) {
 
     return dimIndices.head;
 
@@ -1440,20 +1440,20 @@ public:
 
     template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
     inline __host__ __device__ const T & operator()(const IdxT d0, const IdxT d1) const {
-        return data_[internal::offsetXD<IdxT,DimT,2>(internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(d0,d1)),
+        return data_[internal::OffsetXD<IdxT,DimT,2>(internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(d0,d1)),
                 internal::IndexList<IdxT,1>(Eigen::Matrix<uint,1,1>(dimensions_[0])))];
     }
 
-    template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
+    template <int D2 = D, typename std::enable_if<D2 == 2 && !Const, int>::type = 0>
     inline __host__ __device__ T & operator()(const IdxT d0, const IdxT d1) {
-        return data_[internal::offsetXD<IdxT,DimT,2>(internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(d0,d1)),
+        return data_[internal::OffsetXD<IdxT,DimT,2>(internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(d0,d1)),
                 internal::IndexList<IdxT,1>(Eigen::Matrix<uint,1,1>(dimensions_[0])))];
     }
 
     template <typename Derived,
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 2 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
-                                      std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
+                                      std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value && !Const, int>::type = 0>
     inline __host__ __device__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
         return operator()(indices(0),indices(1));
     }
@@ -1468,20 +1468,20 @@ public:
 
     template <int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
     inline __host__ __device__ const T & operator()(const IdxT d0, const IdxT d1, const IdxT d2) const {
-        return data_[internal::offsetXD<IdxT,DimT,3>(internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(d0,d1,d2)),
+        return data_[internal::OffsetXD<IdxT,DimT,3>(internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(d0,d1,d2)),
                 internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(dimensions_[0],dimensions_[1])))];
     }
 
-    template <int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
+    template <int D2 = D, typename std::enable_if<D2 == 3 && !Const, int>::type = 0>
     inline __host__ __device__ T & operator()(const IdxT d0, const IdxT d1, const IdxT d2) {
-        return data_[internal::offsetXD<IdxT,DimT,3>(internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(d0,d1,d2)),
+        return data_[internal::OffsetXD<IdxT,DimT,3>(internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(d0,d1,d2)),
                 internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(dimensions_[0],dimensions_[1])))];
     }
 
     template <typename Derived,
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 3 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
-                                      std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
+                                      std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value && !Const, int>::type = 0>
     inline __host__ __device__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
         return operator()(indices(0),indices(1),indices(2));
     }
@@ -1496,20 +1496,20 @@ public:
 
     template <int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
     inline __host__ __device__ const T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) const {
-        return data_[internal::offsetXD<IdxT,DimT,4>(internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(d0,d1,d2,d3)),
+        return data_[internal::OffsetXD<IdxT,DimT,4>(internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(d0,d1,d2,d3)),
                 internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(dimensions_[0],dimensions_[1],dimensions_[2])))];
     }
 
-    template <int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
+    template <int D2 = D, typename std::enable_if<D2 == 4 && !Const, int>::type = 0>
     inline __host__ __device__ T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) {
-        return data_[internal::offsetXD<IdxT,DimT,4>(internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(d0,d1,d2,d3)),
+        return data_[internal::OffsetXD<IdxT,DimT,4>(internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(d0,d1,d2,d3)),
                 internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(dimensions_[0],dimensions_[1],dimensions_[2])))];
     }
 
     template <typename Derived,
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 4 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
-                                      std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
+                                      std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value && !Const, int>::type = 0>
     inline __host__ __device__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
         return operator()(indices(0),indices(1),indices(2),indices(3));
     }
@@ -1524,20 +1524,20 @@ public:
 
     template <int D2 = D, typename std::enable_if<D2 == 5, int>::type = 0>
     inline __host__ __device__ const T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3, const IdxT d4) const {
-        return data_[internal::offsetXD<IdxT,DimT,5>(internal::IndexList<IdxT,5>(Eigen::Matrix<uint,5,1>(d0,d1,d2,d3,d4)),
+        return data_[internal::OffsetXD<IdxT,DimT,5>(internal::IndexList<IdxT,5>(Eigen::Matrix<uint,5,1>(d0,d1,d2,d3,d4)),
                 internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(dimensions_[0],dimensions_[1],dimensions_[2],dimensions_[3])))];
     }
 
-    template <int D2 = D, typename std::enable_if<D2 == 5, int>::type = 0>
+    template <int D2 = D, typename std::enable_if<D2 == 5 && !Const, int>::type = 0>
     inline __host__ __device__ T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3, const IdxT d4) {
-        return data_[internal::offsetXD<IdxT,DimT,5>(internal::IndexList<IdxT,5>(Eigen::Matrix<uint,5,1>(d0,d1,d2,d3,d4)),
+        return data_[internal::OffsetXD<IdxT,DimT,5>(internal::IndexList<IdxT,5>(Eigen::Matrix<uint,5,1>(d0,d1,d2,d3,d4)),
                 internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(dimensions_[0],dimensions_[1],dimensions_[2],dimensions_[3])))];
     }
 
     template <typename Derived,
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 5 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
-                                      std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
+                                      std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value && !Const, int>::type = 0>
     inline __host__ __device__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
         return operator()(indices(0),indices(1),indices(2),indices(3),indices(4));
     }
@@ -1555,7 +1555,7 @@ public:
 
     template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
     inline __host__ __device__ DimT offset(const IdxT d0, const IdxT d1) const {
-        return internal::offsetXD<IdxT,DimT,2>(internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(d0,d1)),
+        return internal::OffsetXD<IdxT,DimT,2>(internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(d0,d1)),
                                                internal::IndexList<IdxT,1>(Eigen::Matrix<uint,1,1>(dimensions_[0])));
     }
 
@@ -1569,7 +1569,7 @@ public:
 
     template <int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
     inline __host__ __device__ DimT offset(const IdxT d0, const IdxT d1, const IdxT d2) const {
-        return internal::offsetXD<IdxT,DimT,3>(internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(d0,d1,d2)),
+        return internal::OffsetXD<IdxT,DimT,3>(internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(d0,d1,d2)),
                                                internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(dimensions_[0],dimensions_[1])));
     }
 
@@ -1583,7 +1583,7 @@ public:
 
     template <int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
     inline __host__ __device__ DimT offset(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) const {
-        return internal::offsetXD<IdxT,DimT,4>(internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(d0,d1,d2,d3)),
+        return internal::OffsetXD<IdxT,DimT,4>(internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(d0,d1,d2,d3)),
                                                internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(dimensions_[0],dimensions_[1],dimensions_[2])));
     }
 
