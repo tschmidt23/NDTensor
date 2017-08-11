@@ -369,7 +369,7 @@ inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndic
 
 template <typename Scalar>
 __host__ __device__
-inline Scalar interpolate(const Scalar * data,
+inline Scalar Interpolate(const Scalar * data,
                           const IndexList<uint,0> /*dimensions*/,
                           const std::tuple<> /*remainingIndices*/) {
 
@@ -379,7 +379,7 @@ inline Scalar interpolate(const Scalar * data,
 
 template <typename Scalar,typename ... IdxTs>
 __host__ __device__
-inline Scalar interpolate(const Scalar * data,
+inline Scalar Interpolate(const Scalar * data,
                           const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
                           const std::tuple<float, IdxTs...> remainingIndices) {
 
@@ -387,10 +387,10 @@ inline Scalar interpolate(const Scalar * data,
     const uint i = firstIndex;
     const float t = firstIndex - i;
 
-    return (1-t)*interpolate(data + i*dimensions.tail.product(),
+    return (1-t)*Interpolate(data + i*dimensions.tail.product(),
                              dimensions.tail,
                              tail(remainingIndices))
-           + t * interpolate(data + (i+1)*dimensions.tail.product(),
+           + t * Interpolate(data + (i+1)*dimensions.tail.product(),
                              dimensions.tail,
                              tail(remainingIndices));
 
@@ -398,13 +398,13 @@ inline Scalar interpolate(const Scalar * data,
 
 template <typename Scalar, typename ... IdxTs>
 __host__ __device__
-inline Scalar interpolate(const Scalar * data,
+inline Scalar Interpolate(const Scalar * data,
                           const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
                           const std::tuple<int, IdxTs...> remainingIndices) {
 
     const int firstIndex = std::get<0>(remainingIndices);
 
-    return interpolate(data + firstIndex*dimensions.tail.product(),
+    return Interpolate(data + firstIndex*dimensions.tail.product(),
                        dimensions.tail,
                        tail(remainingIndices));
 
@@ -413,7 +413,7 @@ inline Scalar interpolate(const Scalar * data,
 
 template <typename Scalar, typename ValidityCheck>
 __host__ __device__
-inline Scalar interpolateValidOnly(const Scalar * data,
+inline Scalar InterpolateValidOnly(const Scalar * data,
                                    const IndexList<uint,0> dimensions,
                                    float & totalWeight,
                                    const float thisWeight,
@@ -435,7 +435,7 @@ inline Scalar interpolateValidOnly(const Scalar * data,
 
 template <typename Scalar, typename ValidityCheck, typename ... IdxTs>
 __host__ __device__
-inline Scalar interpolateValidOnly(const Scalar * data,
+inline Scalar InterpolateValidOnly(const Scalar * data,
                                    const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
                                    float & totalWeight,
                                    const float thisWeight,
@@ -446,13 +446,13 @@ inline Scalar interpolateValidOnly(const Scalar * data,
     const uint i = firstIndex;
     const float t = firstIndex - i;
 
-    return interpolateValidOnly(data + i*dimensions.tail.product(),
+    return InterpolateValidOnly(data + i*dimensions.tail.product(),
                                 dimensions.tail,
                                 totalWeight,
                                 thisWeight * (1-t),
                                 check,
                                 tail(remainingIndices)) +
-           interpolateValidOnly(data + (i+1)*dimensions.tail.product(),
+           InterpolateValidOnly(data + (i+1)*dimensions.tail.product(),
                                 dimensions.tail,
                                 totalWeight,
                                 thisWeight * t,
@@ -463,7 +463,7 @@ inline Scalar interpolateValidOnly(const Scalar * data,
 
 template <typename Scalar, typename ValidityCheck, typename ... IdxTs>
 __host__ __device__
-inline Scalar interpolateValidOnly(const Scalar * data,
+inline Scalar InterpolateValidOnly(const Scalar * data,
                                    const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
                                    float & totalWeight,
                                    const float thisWeight,
@@ -472,7 +472,7 @@ inline Scalar interpolateValidOnly(const Scalar * data,
 
     const int firstIndex = std::get<0>(remainingIndices);
 
-    return interpolateValidOnly(data + firstIndex*dimensions.tail.product(),
+    return InterpolateValidOnly(data + firstIndex*dimensions.tail.product(),
                                 dimensions.tail,
                                 totalWeight,
                                 thisWeight,
@@ -482,13 +482,13 @@ inline Scalar interpolateValidOnly(const Scalar * data,
 }
 
 template <typename Scalar, typename ValidityCheck, typename ... IdxTs>
-__host__ __device__ inline Scalar interpolateValidOnly(const Scalar * data,
+__host__ __device__ inline Scalar InterpolateValidOnly(const Scalar * data,
                                                        const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                                        ValidityCheck check,
                                                        std::tuple<IdxTs...> indices) {
 
     float totalWeight(0);
-    const Scalar totalValue = interpolateValidOnly(data,dimensions,totalWeight, 1.f,
+    const Scalar totalValue = InterpolateValidOnly(data,dimensions,totalWeight, 1.f,
                                                    check, indices);
 
     if (totalWeight) {
@@ -909,7 +909,7 @@ struct Interpolator {
                                                       const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                                       const std::tuple<IdxTs...> & indices) const {
 
-        return internal::interpolate(data,dimensions,indices);
+        return internal::Interpolate(data,dimensions,indices);
 
     }
 
@@ -1622,24 +1622,24 @@ public:
 
     template <typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
-    inline __host__ __device__ T interpolate(const IdxTs ... vs) const {
-        return internal::interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
+    inline __host__ __device__ T Interpolate(const IdxTs ... vs) const {
+        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
                                      internal::TupleReverser<std::tuple<IdxTs...> >::reverse(std::tuple<IdxTs...>(vs...)));
     }
 
     template <typename Derived,
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-    inline __host__ __device__ T interpolate(const Eigen::MatrixBase<Derived> & v) const {
-        return internal::interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
-                                     vectorToTuple(v.reverse()));
+    inline __host__ __device__ T Interpolate(const Eigen::MatrixBase<Derived> & v) const {
+        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
+                                     VectorToTuple(v.reverse()));
     }
 
     template <typename ValidityCheck, typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
-    inline __host__ __device__ T interpolateValidOnly(ValidityCheck check, IdxTs ... vs) const {
+    inline __host__ __device__ T InterpolateValidOnly(ValidityCheck check, IdxTs ... vs) const {
 
-        return internal::interpolateValidOnly(data_,internal::IndexList<DimT,D>(dimensions_.reverse()),
+        return internal::InterpolateValidOnly(data_,internal::IndexList<DimT,D>(dimensions_.reverse()),
                                               check, internal::TupleReverser<std::tuple<IdxTs...> >::reverse(std::tuple<IdxTs...>(vs...)));
 
     }
@@ -1647,9 +1647,9 @@ public:
     template <typename ValidityCheck, typename Derived,
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-    inline __host__ __device__ T interpolateValidOnly(ValidityCheck check, const Eigen::MatrixBase<Derived> & v) const {
-        return internal::interpolateValidOnly(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
-                                              check,vectorToTuple(v.reverse()));
+    inline __host__ __device__ T InterpolateValidOnly(ValidityCheck check, const Eigen::MatrixBase<Derived> & v) const {
+        return internal::InterpolateValidOnly(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
+                                              check,VectorToTuple(v.reverse()));
     }
 
     template <typename Transformer, typename ... IdxTs,
@@ -1678,12 +1678,12 @@ public:
 
     // -=-=-=-=-=-=- bounds-checking functions -=-=-=-=-=-=-
     template <typename PosT, int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
-    inline __host__ __device__ bool inBounds(const PosT d0, const PosT border) const {
+    inline __host__ __device__ bool InBounds(const PosT d0, const PosT border) const {
         return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border);
     }
 
     template <typename PosT, int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-    inline __host__ __device__ bool inBounds(const PosT d0, const PosT d1, const PosT border) const {
+    inline __host__ __device__ bool InBounds(const PosT d0, const PosT d1, const PosT border) const {
         return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
                (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border);
     }
@@ -1692,12 +1692,12 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 2 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __host__ __device__ bool inBounds(const Eigen::MatrixBase<Derived> & point, const PosT border) const {
-        return inBounds(point(0),point(1),border);
+    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const PosT border) const {
+        return InBounds(point(0),point(1),border);
     }
 
     template <typename PosT, int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
-    inline __host__ __device__ bool inBounds(const PosT d0, const PosT d1, const PosT d2, const PosT border) const {
+    inline __host__ __device__ bool InBounds(const PosT d0, const PosT d1, const PosT d2, const PosT border) const {
         return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
                (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border) &&
                (d2 >= border) && (d2 <= DimensionSize(2) - 1 - border);
@@ -1707,12 +1707,12 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 3 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __host__ __device__ bool inBounds(const Eigen::MatrixBase<Derived> & point, const PosT border) const {
-        return inBounds(point(0),point(1),point(2),border);
+    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const PosT border) const {
+        return InBounds(point(0),point(1),point(2),border);
     }
 
     template <typename PosT, int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
-    inline __host__ __device__ bool inBounds(const PosT d0, const PosT d1, const PosT d2, const PosT d3, const PosT border) const {
+    inline __host__ __device__ bool InBounds(const PosT d0, const PosT d1, const PosT d2, const PosT d3, const PosT border) const {
         return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
                (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border) &&
                (d2 >= border) && (d2 <= DimensionSize(2) - 1 - border) &&
@@ -1723,8 +1723,8 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 4 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __host__ __device__ bool inBounds(const Eigen::MatrixBase<Derived> & point, const PosT border) const {
-        return inBounds(point(0),point(1),point(2),point(3),border);
+    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const PosT border) const {
+        return InBounds(point(0),point(1),point(2),point(3),border);
     }
 
     // -=-=-=-=-=-=- gradient functions -=-=-=-=-=-=-
@@ -1733,7 +1733,7 @@ public:
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
     inline __host__ __device__ typename internal::GradientComputer<T,D,internal::BackwardDifference>::GradientType backwardDifference(const Eigen::MatrixBase<Derived> & v) const {
 
-        return internal::GradientComputer<T,D,internal::BackwardDifference>::compute(data_,dimensions_,vectorToTuple(v));
+        return internal::GradientComputer<T,D,internal::BackwardDifference>::compute(data_,dimensions_,VectorToTuple(v));
 
     }
 
@@ -1752,7 +1752,7 @@ public:
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
     inline __host__ __device__ typename internal::GradientComputer<T,D,internal::BackwardDifference>::GradientType centralDifference(const Eigen::MatrixBase<Derived> & v) const {
 
-        return internal::GradientComputer<T,D,internal::CentralDifference>::compute(data_,dimensions_,vectorToTuple(v));
+        return internal::GradientComputer<T,D,internal::CentralDifference>::compute(data_,dimensions_,VectorToTuple(v));
 
     }
 
@@ -1771,7 +1771,7 @@ public:
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
     inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::GradientType transformBackwardDifference(Transformer transformer, const Eigen::MatrixBase<Derived> & v) const {
 
-        return internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::transformCompute(transformer,data_,dimensions_,vectorToTuple(v));
+        return internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::transformCompute(transformer,data_,dimensions_,VectorToTuple(v));
 
     }
 
@@ -1792,7 +1792,7 @@ public:
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
     inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::GradientType transformBackwardDifferenceValidOnly(Transformer transformer, ValidityCheck check, const Eigen::MatrixBase<Derived> & v) const {
 
-        return internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::transformComputeValidOnly(transformer,check,data_,dimensions_,vectorToTuple(v));
+        return internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::transformComputeValidOnly(transformer,check,data_,dimensions_,VectorToTuple(v));
 
     }
 
