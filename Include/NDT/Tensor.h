@@ -389,10 +389,10 @@ inline Scalar Interpolate(const Scalar * data,
 
     return (1-t)*Interpolate(data + i*dimensions.tail.product(),
                              dimensions.tail,
-                             tail(remainingIndices))
+                             GetTail(remainingIndices))
            + t * Interpolate(data + (i+1)*dimensions.tail.product(),
                              dimensions.tail,
-                             tail(remainingIndices));
+                             GetTail(remainingIndices));
 
 }
 
@@ -406,7 +406,7 @@ inline Scalar Interpolate(const Scalar * data,
 
     return Interpolate(data + firstIndex*dimensions.tail.product(),
                        dimensions.tail,
-                       tail(remainingIndices));
+                       GetTail(remainingIndices));
 
 }
 
@@ -451,13 +451,13 @@ inline Scalar InterpolateValidOnly(const Scalar * data,
                                 totalWeight,
                                 thisWeight * (1-t),
                                 check,
-                                tail(remainingIndices)) +
+                                GetTail(remainingIndices)) +
            InterpolateValidOnly(data + (i+1)*dimensions.tail.product(),
                                 dimensions.tail,
                                 totalWeight,
                                 thisWeight * t,
                                 check,
-                                tail(remainingIndices));
+                                GetTail(remainingIndices));
 
 }
 
@@ -477,7 +477,7 @@ inline Scalar InterpolateValidOnly(const Scalar * data,
                                 totalWeight,
                                 thisWeight,
                                 check,
-                                tail(remainingIndices));
+                                GetTail(remainingIndices));
 
 }
 
