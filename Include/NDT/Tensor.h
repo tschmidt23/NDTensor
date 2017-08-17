@@ -1848,7 +1848,7 @@ public:
     // -=-=-=-=-=-=- pointer manipulation functions -=-=-=-=-=-=-
     template <typename U = T,
               typename std::enable_if<!Const && sizeof(U), int>::type = 0>
-    inline __host__ __device__ void setDataPointer(T * data) { data_ = data; }
+    inline __host__ __device__ void SetDataPointer(T * data) { data_ = data; }
 
     // -=-=-=-=-=-=- copying functions -=-=-=-=-=-=-
     template <Residency R2, bool Const2, bool Check=false>
