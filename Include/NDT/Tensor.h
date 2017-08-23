@@ -1908,11 +1908,11 @@ public:
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 1,int>::type = 0>
-    inline void resize(const DimT length) {
-        resize(Eigen::Matrix<DimT,D,1>(length));
+    inline void Resize(const DimT length) {
+        Resize(Eigen::Matrix<DimT,D,1>(length));
     }
 
-    void resize(const Eigen::Matrix<DimT,D,1> & dimensions) {
+    void Resize(const Eigen::Matrix<DimT,D,1> & dimensions) {
         internal::AutomaticAllocator<T,R>::deallocate(this->data_);
         this->data_ = internal::AutomaticAllocator<T,R>::allocate(dimensions.prod());
         this->dimensions_ = dimensions;
