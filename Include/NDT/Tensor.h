@@ -1790,7 +1790,7 @@ public:
               typename Derived,
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::GradientType transformBackwardDifferenceValidOnly(Transformer transformer, ValidityCheck check, const Eigen::MatrixBase<Derived> & v) const {
+    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::GradientType TransformBackwardDifferenceValidOnly(Transformer transformer, ValidityCheck check, const Eigen::MatrixBase<Derived> & v) const {
 
         return internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::transformComputeValidOnly(transformer,check,data_,dimensions_,VectorToTuple(v));
 
@@ -1800,7 +1800,7 @@ public:
               typename ValidityCheck,
               typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D,int>::type = 0>
-    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::GradientType transformBackwardDifferenceValidOnly(Transformer transformer, ValidityCheck check, const IdxTs ... v) const {
+    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::GradientType TransformBackwardDifferenceValidOnly(Transformer transformer, ValidityCheck check, const IdxTs ... v) const {
 
         return internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::template transformComputeValidOnly<Transformer,ValidityCheck,IdxTs...>(transformer,check,data_,dimensions_,std::tuple<IdxTs...>(v...));
 
