@@ -608,7 +608,7 @@ inline typename Transformer::ReturnType transformInterpolate(const Scalar * data
 template <typename Scalar, typename Transformer, typename ValidityCheck>
 __host__ __device__
 inline typename Transformer::ReturnType transformInterpolateValidOnly(const Scalar * data,
-                                                                      const IndexList<uint,0> dimensions,
+                                                                      const IndexList<uint,0> /*dimensions*/,
                                                                       typename Transformer::ScalarType & totalWeight,
                                                                       const typename Transformer::ScalarType thisWeight,
                                                                       Transformer transformer,
