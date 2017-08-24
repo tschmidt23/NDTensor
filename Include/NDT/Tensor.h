@@ -578,11 +578,11 @@ inline typename Transformer::ReturnType transformInterpolate(const Scalar * data
     return (1-t)*transformInterpolate(data + i*dimensions.tail.product(),
                                       dimensions.tail,
                                       transformer,
-                                      tail(remainingIndices))
+                                      GetTail(remainingIndices))
            + t * transformInterpolate(data + (i+1)*dimensions.tail.product(),
                                       dimensions.tail,
                                       transformer,
-                                      tail(remainingIndices));
+                                      GetTail(remainingIndices));
 
 }
 
@@ -600,7 +600,7 @@ inline typename Transformer::ReturnType transformInterpolate(const Scalar * data
     return transformInterpolate(data + firstIndex*dimensions.tail.product(),
                                 dimensions.tail,
                                 transformer,
-                                tail(remainingIndices));
+                                GetTail(remainingIndices));
 
 }
 
@@ -650,14 +650,14 @@ inline typename Transformer::ReturnType transformInterpolateValidOnly(const Scal
                                          thisWeight * (1-t),
                                          transformer,
                                          check,
-                                         tail(remainingIndices)) +
+                                         GetTail(remainingIndices)) +
            transformInterpolateValidOnly(data + (i+1)*dimensions.tail.product(),
                                          dimensions.tail,
                                          totalWeight,
                                          thisWeight * t,
                                          transformer,
                                          check,
-                                         tail(remainingIndices));
+                                         GetTail(remainingIndices));
 
 }
 
@@ -679,7 +679,7 @@ inline typename Transformer::ReturnType transformInterpolateValidOnly(const Scal
                                          thisWeight,
                                          transformer,
                                          check,
-                                         tail(remainingIndices));
+                                         GetTail(remainingIndices));
 
 }
 
@@ -717,7 +717,7 @@ __host__ __device__ inline typename Transformer::ReturnType transformInterpolate
 //                                totalWeight,
 //                                thisWeight,
 //                                check,
-//                                tail(remainingIndices));
+//                                GetTail(remainingIndices));
 
 //}
 
@@ -761,11 +761,11 @@ inline bool validForInterpolation(const Scalar * data,
     return validForInterpolation(data + i*dimensions.tail.product(),
                                  dimensions.tail,
                                  check,
-                                 tail(remainingIndices)) &&
+                                 GetTail(remainingIndices)) &&
            validForInterpolation(data + (i+1)*dimensions.tail.product(),
                                  dimensions.tail,
                                  check,
-                                 tail(remainingIndices));
+                                 GetTail(remainingIndices));
 
 }
 
@@ -781,7 +781,7 @@ inline bool validForInterpolation(const Scalar * data,
     return validForInterpolation(data + firstIndex*dimensions.tail.product(),
                                  dimensions.tail,
                                  check,
-                                 tail(remainingIndices));
+                                 GetTail(remainingIndices));
 
 }
 
@@ -1206,7 +1206,7 @@ struct GradientComputer {
         GradientFiller<Diff,Scalar,1,D,0>::fill(gradient,
                                                 GradientComputeCore<Diff,TransformInterpolator<Transformer>,Scalar,1,D,Eigen::DontAlign | Eigen::RowMajor>(data,
                                                                                                                                                            internal::IndexList<uint,D>(dimensions.reverse()),
-                                                                                                                                                           internal::TupleReverser<std::tuple<IdxTs...> >::reverse(indices),
+                                                                                                                                                           internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
                                                                                                                                                            TransformInterpolator<Transformer>(transformer)),
                                                 data,
                                                 internal::IndexList<uint,D>(dimensions.reverse()),
@@ -1227,11 +1227,11 @@ struct GradientComputer {
         GradientFiller<Diff,Scalar,1,D,0>::fill(gradient,
                                                                   GradientComputeCore<Diff,TransformValidOnlyInterpolator<Transformer,ValidityCheck>,Scalar,1,D,Eigen::DontAlign | Eigen::RowMajor>(data,
                                                                                                                                                                              internal::IndexList<uint,D>(dimensions.reverse()),
-                                                                                                                                                                             internal::TupleReverser<std::tuple<IdxTs...> >::reverse(indices),
+                                                                                                                                                                             internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
                                                                                                                                                                              TransformValidOnlyInterpolator<Transformer,ValidityCheck>(transformer,check)),
                                                                   data,
                                                                   internal::IndexList<uint,D>(dimensions.reverse()),
-                                                                  internal::TupleReverser<std::tuple<IdxTs...> >::reverse(indices));
+                                                                  internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices));
         return gradient;
 
     }
@@ -1256,7 +1256,7 @@ struct GradientComputer<Eigen::Matrix<Scalar,R,1,Options>, D, Diff> {
                                                                                              Interpolator<Eigen::Matrix<Scalar,R,1,Options> >()),
                                                 data,
                                                 internal::IndexList<uint,D>(dimensions.reverse()),
-                                                internal::TupleReverser<std::tuple<IdxTs...> >::reverse(indices));
+                                                internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices));
         return gradient;
     }
 
@@ -1274,7 +1274,7 @@ struct GradientComputer<Eigen::Matrix<Scalar,R,1,Options>, D, Diff> {
                                                                                              TransformInterpolator<Transformer>(transformer)),
                                                 data,
                                                 internal::IndexList<uint,D>(dimensions.reverse()),
-                                                internal::TupleReverser<std::tuple<IdxTs...> >::reverse(indices));
+                                                internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices));
         return gradient;
 
     }
@@ -1294,7 +1294,7 @@ struct GradientComputer<Eigen::Matrix<Scalar,R,1,Options>, D, Diff> {
                                                                                              TransformValidOnlyInterpolator<Transformer,ValidityCheck>(transformer,check)),
                                                 data,
                                                 internal::IndexList<uint,D>(dimensions.reverse()),
-                                                internal::TupleReverser<std::tuple<IdxTs...> >::reverse(indices));
+                                                internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices));
         return gradient;
 
     }
