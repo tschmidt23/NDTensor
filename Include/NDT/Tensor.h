@@ -370,7 +370,8 @@ template <typename BorderT>
 __host__ __device__
 inline bool BoundsCheck(const IndexList<uint,0> /*dimensions*/,
                         const std::tuple<> /*remainingPositions*/,
-                        const BorderT /*border*/) {
+                        const BorderT /*borderLow*/,
+                        const BorderT /*borderHight*/) {
     return true;
 }
 
@@ -378,11 +379,12 @@ template <typename BorderT, typename Head, typename ... Tail>
 __host__ __device__
 inline bool BoundsCheck(const IndexList<uint,sizeof...(Tail)+1> dimensions,
                         const std::tuple<Head, Tail...> remainingPositions,
-                        const BorderT border) {
+                        const BorderT borderLow,
+                        const BorderT borderHigh) {
 
     const Head firstPosition = std::get<0>(remainingPositions);
-    return (firstPosition >= border && firstPosition <= dimensions.head - 1 - border) &&
-            BoundsCheck(dimensions.tail,GetTail(remainingPositions),border);
+    return (firstPosition >= borderLow && firstPosition <= dimensions.head - 1 - borderHigh) &&
+            BoundsCheck(dimensions.tail,GetTail(remainingPositions),borderLow,borderHigh);
 
 }
 
@@ -1320,6 +1322,26 @@ struct GradientComputer<Eigen::Matrix<Scalar,R,1,Options>, D, Diff> {
 
 };
 
+template <DifferenceType>
+struct DifferenceTypeTraits;
+
+template <>
+struct DifferenceTypeTraits<BackwardDifference> {
+    static constexpr int borderLow = 1;
+    static constexpr int borderHigh = 0;
+};
+
+template <>
+struct DifferenceTypeTraits<CentralDifference> {
+    static constexpr int borderLow = 1;
+    static constexpr int borderHigh = 1;
+};
+
+template <>
+struct DifferenceTypeTraits<ForwardDifference> {
+    static constexpr int borderLow = 0;
+    static constexpr int borderHigh = 1;
+};
 
 template <typename ... IdxTs>
 struct IndexTypePrinter {
@@ -1750,32 +1772,55 @@ public:
               typename std::enable_if<sizeof...(PosTail) == (D-1) && std::is_fundamental<PosHead>::value, int>::type = 0>
     inline __host__ __device__ bool InBounds(PosHead head, PosTail... tail) const {
         return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),
-                                     std::tuple<PosHead,PosTail...>(head,tail...), 0);
+                                     std::tuple<PosHead,PosTail...>(head,tail...), 0, 0);
     }
 
     template <typename ... PosTs,
               typename std::enable_if<sizeof...(PosTs) == (D+1), int>::type = 0>
     inline __host__ __device__ bool InBounds(PosTs... pos) const {
         const std::tuple<PosTs...> posTuple(pos...);
+        const auto border = std::get<sizeof...(PosTs)-1>(posTuple);
         return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),
                                      internal::TupleSubset(posTuple, typename internal::IntegerList<0,sizeof...(PosTs)-2>::Type()),
-                                     std::get<sizeof...(PosTs)-1>(posTuple));
+                                     border, border);
     }
 
     template <typename BorderT, typename Derived,
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
     inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & pos, BorderT border) const {
-        return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),VectorToTuple(pos),border);
+        return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),VectorToTuple(pos),border,border);
     }
 
     template <typename Derived,
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
     inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & pos) const {
-        return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),VectorToTuple(pos),0);
+        return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),VectorToTuple(pos),0,0);
     }
 
+#define __NDT_TENSOR_DIFFERENCE_BOUNDS_DEFINITION__(DiffType) \
+    template <typename PosHead, typename ... PosTail, \
+              typename std::enable_if<sizeof...(PosTail) == (D-1) && std::is_fundamental<PosHead>::value, int>::type = 0> \
+    inline __host__ __device__ bool In##DiffType##DifferenceBounds(PosHead head, PosTail... tail) const { \
+        return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_), \
+                                     std::tuple<PosHead,PosTail...>(head,tail...), \
+                                     internal::DifferenceTypeTraits<internal::DiffType##Difference>::borderLow, \
+                                     internal::DifferenceTypeTraits<internal::DiffType##Difference>::borderHigh); \
+    } \
+    \
+    template <typename Derived, \
+              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D && \
+                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0> \
+    inline __host__ __device__ bool In##DiffType##DifferenceBounds(const Eigen::MatrixBase<Derived> & pos) const { \
+        return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),VectorToTuple(pos), \
+                                     internal::DifferenceTypeTraits<internal::DiffType##Difference>::borderLow, \
+                                     internal::DifferenceTypeTraits<internal::DiffType##Difference>::borderHigh); \
+    }
+
+    __NDT_TENSOR_DIFFERENCE_BOUNDS_DEFINITION__(Backward)
+    __NDT_TENSOR_DIFFERENCE_BOUNDS_DEFINITION__(Central)
+    __NDT_TENSOR_DIFFERENCE_BOUNDS_DEFINITION__(Forward)
 
     // -=-=-=-=-=-=- gradient functions -=-=-=-=-=-=-
 #define __NDT_TENSOR_DIFFERENCE_DEFINITION__(DiffType) \
