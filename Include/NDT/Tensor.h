@@ -1778,122 +1778,67 @@ public:
 
 
     // -=-=-=-=-=-=- gradient functions -=-=-=-=-=-=-
-    template <typename Derived,
-              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
-                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-    inline __host__ __device__ typename internal::GradientComputer<T,D,internal::BackwardDifference>::GradientType BackwardDifference(const Eigen::MatrixBase<Derived> & v) const {
-
-        return internal::GradientComputer<T,D,internal::BackwardDifference>::compute(data_,dimensions_,VectorToTuple(v));
-
+#define __NDT_TENSOR_DIFFERENCE_DEFINITION__(DiffType) \
+    template <typename Derived, \
+              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D && \
+                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0> \
+    inline __host__ __device__ typename internal::GradientComputer<T,D,internal::DiffType##Difference>::GradientType DiffType##Difference(const Eigen::MatrixBase<Derived> & v) const { \
+        \
+        return internal::GradientComputer<T,D,internal::DiffType##Difference>::compute(data_,dimensions_,VectorToTuple(v)); \
+        \
+    } \
+    \
+    template <typename ... IdxTs, \
+              typename std::enable_if<sizeof...(IdxTs) == D,int>::type = 0> \
+    inline __host__ __device__ typename internal::GradientComputer<T,D,internal::DiffType##Difference>::GradientType DiffType##Difference(const IdxTs ... v) const { \
+        \
+        return internal::GradientComputer<T,D,internal::DiffType##Difference>::template compute<IdxTs...>(data_,dimensions_,std::tuple<IdxTs...>(v...)); \
+        \
+    } \
+    \
+    template <typename Transformer, \
+              typename Derived, \
+              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D && \
+                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0> \
+    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::GradientType Transform##DiffType##Difference(Transformer transformer, const Eigen::MatrixBase<Derived> & v) const { \
+        \
+        return internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::TransformCompute(transformer,data_,dimensions_,VectorToTuple(v)); \
+        \
+    } \
+    \
+    template <typename Transformer, \
+              typename ... IdxTs, \
+              typename std::enable_if<sizeof...(IdxTs) == D,int>::type = 0> \
+    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::GradientType Transform##DiffType##Difference(Transformer transformer, const IdxTs ... v) const { \
+        \
+        return internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::template TransformCompute<Transformer,IdxTs...>(transformer,data_,dimensions_,std::tuple<IdxTs...>(v...)); \
+        \
+    } \
+    \
+    template <typename Transformer, \
+              typename ValidityCheck, \
+              typename Derived, \
+              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D && \
+                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0> \
+    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::GradientType Transform##DiffType##DifferenceValidOnly(Transformer transformer, ValidityCheck check, const Eigen::MatrixBase<Derived> & v) const { \
+        \
+        return internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::TransformComputeValidOnly(transformer,check,data_,dimensions_,VectorToTuple(v)); \
+        \
+    } \
+    \
+    template <typename Transformer, \
+              typename ValidityCheck, \
+              typename ... IdxTs, \
+              typename std::enable_if<sizeof...(IdxTs) == D,int>::type = 0> \
+    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::GradientType Transform##DiffType##DifferenceValidOnly(Transformer transformer, ValidityCheck check, const IdxTs ... v) const { \
+        \
+        return internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::template TransformComputeValidOnly<Transformer,ValidityCheck,IdxTs...>(transformer,check,data_,dimensions_,std::tuple<IdxTs...>(v...)); \
+        \
     }
 
-    template <typename ... IdxTs,
-              typename std::enable_if<sizeof...(IdxTs) == D,int>::type = 0>
-    inline __host__ __device__ typename internal::GradientComputer<T,D,internal::BackwardDifference>::GradientType BackwardDifference(const IdxTs ... v) const {
-
-//        internal::IndexTypePrinter<IdxTs...>::print(v...);
-
-        return internal::GradientComputer<T,D,internal::BackwardDifference>::template compute<IdxTs...>(data_,dimensions_,std::tuple<IdxTs...>(v...));
-
-    }
-
-    template <typename Derived,
-              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
-                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-    inline __host__ __device__ typename internal::GradientComputer<T,D,internal::BackwardDifference>::GradientType CentralDifference(const Eigen::MatrixBase<Derived> & v) const {
-
-        return internal::GradientComputer<T,D,internal::CentralDifference>::compute(data_,dimensions_,VectorToTuple(v));
-
-    }
-
-    template <typename ... IdxTs,
-              typename std::enable_if<sizeof...(IdxTs) == D,int>::type = 0>
-    inline __host__ __device__ typename internal::GradientComputer<T,D,internal::BackwardDifference>::GradientType CentralDifference(const IdxTs ... v) const {
-
-        return internal::GradientComputer<T,D,internal::CentralDifference>::template compute<IdxTs...>(data_,dimensions_,std::tuple<IdxTs...>(v...));
-
-    }
-
-
-    template <typename Transformer,
-              typename Derived,
-              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
-                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::GradientType TransformBackwardDifference(Transformer transformer, const Eigen::MatrixBase<Derived> & v) const {
-
-        return internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::TransformCompute(transformer,data_,dimensions_,VectorToTuple(v));
-
-    }
-
-    template <typename Transformer,
-              typename ... IdxTs,
-              typename std::enable_if<sizeof...(IdxTs) == D,int>::type = 0>
-    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::GradientType TransformBackwardDifference(Transformer transformer, const IdxTs ... v) const {
-
-        return internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::template TransformCompute<Transformer,IdxTs...>(transformer,data_,dimensions_,std::tuple<IdxTs...>(v...));
-
-    }
-
-
-    template <typename Transformer,
-              typename ValidityCheck,
-              typename Derived,
-              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
-                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::GradientType TransformBackwardDifferenceValidOnly(Transformer transformer, ValidityCheck check, const Eigen::MatrixBase<Derived> & v) const {
-
-        return internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::TransformComputeValidOnly(transformer,check,data_,dimensions_,VectorToTuple(v));
-
-    }
-
-    template <typename Transformer,
-              typename ValidityCheck,
-              typename ... IdxTs,
-              typename std::enable_if<sizeof...(IdxTs) == D,int>::type = 0>
-    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::GradientType TransformBackwardDifferenceValidOnly(Transformer transformer, ValidityCheck check, const IdxTs ... v) const {
-
-        return internal::GradientComputer<typename Transformer::ReturnType,D,internal::BackwardDifference>::template TransformComputeValidOnly<Transformer,ValidityCheck,IdxTs...>(transformer,check,data_,dimensions_,std::tuple<IdxTs...>(v...));
-
-    }
-
-//    template <typename Transformer, typename ValidityCheck, typename IdxT1,
-//              int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
-//    inline __host__ __device__ Eigen::Matrix<typename Transformer::ReturnType,D,1> transformBackwardGradientValidOnly(Transformer transformer, ValidityCheck check, const IdxT1 v0) {
-//        typedef typename Transformer::ReturnType Transformed;
-//        const Transformed center = transformInterpolateValidOnly(transformer,check,v0);
-//        return Eigen::Matrix<Transformed,D,1>(center - transformInterpolateValidOnly(transformer,check,v0-1));
-//    }
-
-//    template <typename Transformer, typename ValidityCheck, typename IdxT1, typename IdxT2,
-//              int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-//    inline __host__ __device__ Eigen::Matrix<typename Transformer::ReturnType,D,1> transformBackwardGradientValidOnly(Transformer transformer, ValidityCheck check, const IdxT1 v0, const IdxT2 v1) {
-//        typedef typename Transformer::ReturnType Transformed;
-//        const Transformed center = transformInterpolateValidOnly(transformer,check,v0,v1);
-//        return Eigen::Matrix<Transformed,D,1>(center - transformInterpolateValidOnly(transformer,check,v0-1,v1),
-//                                              center - transformInterpolateValidOnly(transformer,check,v0,v1-1));
-//    }
-
-//    template <typename Transformer, typename ValidityCheck, typename IdxT1, typename IdxT2, typename IdxT3,
-//              int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
-//    inline __host__ __device__ Eigen::Matrix<typename Transformer::ReturnType,D,1> transformBackwardGradientValidOnly(Transformer transformer, ValidityCheck check, const IdxT1 v0, const IdxT2 v1, const IdxT3 v2) {
-//        typedef typename Transformer::ReturnType Transformed;
-//        const Transformed center = transformInterpolateValidOnly(transformer,check,v0,v1,v2);
-//        return Eigen::Matrix<Transformed,D,1>(center - transformInterpolateValidOnly(transformer,check,v0-1,v1,v2),
-//                                              center - transformInterpolateValidOnly(transformer,check,v0,v1-1,v2),
-//                                              center - transformInterpolateValidOnly(transformer,check,v0,v1,v2-1));
-//    }
-
-//    template <typename Transformer, typename ValidityCheck, typename IdxT1, typename IdxT2, typename IdxT3, typename IdxT4,
-//              int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
-//    inline __host__ __device__ Eigen::Matrix<typename Transformer::ReturnType,D,1> transformBackwardGradientValidOnly(Transformer transformer, ValidityCheck check, const IdxT1 v0, const IdxT2 v1, const IdxT3 v2, const IdxT4 v3) {
-//        typedef typename Transformer::ReturnType Transformed;
-//        const Transformed center = transformInterpolateValidOnly(transformer,check,v0,v1,v2,v3);
-//        return Eigen::Matrix<Transformed,D,1>(center - transformInterpolateValidOnly(transformer,check,v0-1,v1,v2,v3),
-//                                              center - transformInterpolateValidOnly(transformer,check,v0,v1-1,v2,v3),
-//                                              center - transformInterpolateValidOnly(transformer,check,v0,v1,v2-1,v3),
-//                                              center - transformInterpolateValidOnly(transformer,check,v0,v1,v2,v3-1));
-//    }
-
+    __NDT_TENSOR_DIFFERENCE_DEFINITION__(Backward)
+    __NDT_TENSOR_DIFFERENCE_DEFINITION__(Central)
+    __NDT_TENSOR_DIFFERENCE_DEFINITION__(Forward)
 
     // -=-=-=-=-=-=- pointer manipulation functions -=-=-=-=-=-=-
     template <typename U = T,
