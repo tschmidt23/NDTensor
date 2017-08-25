@@ -10,38 +10,57 @@ namespace NDT {
 
 namespace internal {
 
-template <size_t... N>
+template <int... N>
 struct IntegerListConstructor {
-    template <size_t M>
+    template <int M>
     struct PushBack {
         typedef IntegerListConstructor<N...,M> Type;
     };
 };
 
-template <size_t Max>
+template <int Min, int Max>
 struct IntegerList {
-    typedef typename IntegerList<Max-1>::Type::template PushBack<Max>::Type Type;
+    typedef typename IntegerList<Min,Max-1>::Type::template PushBack<Max>::Type Type;
 };
 
-template <>
-struct IntegerList<0> {
-    typedef IntegerListConstructor<> Type;
+template <int Min>
+struct IntegerList<Min,Min> {
+    typedef IntegerListConstructor<Min> Type;
 };
 
-template <size_t...Indices, typename Tuple>
+template <int...Indices, typename Tuple>
 __host__ __device__ inline auto TupleSubset(const Tuple & tuple, IntegerListConstructor<Indices...>)
     -> decltype(std::make_tuple(std::get<Indices>(tuple)...)) {
     return std::make_tuple(std::get<Indices>(tuple)...);
+}
+
+template <typename Head>
+__host__ __device__
+inline std::tuple<> GetTail(const std::tuple<Head> & /*t*/) {
+    return std::tuple<>();
 }
 
 template <typename Head, typename ... Tail>
 __host__ __device__
 inline std::tuple<Tail...> GetTail(const std::tuple<Head,Tail...> & t) {
 
-    return TupleSubset(t, typename IntegerList<sizeof...(Tail)>::Type());
+    return TupleSubset(t, typename IntegerList<1,sizeof...(Tail)>::Type());
 
 }
 
+template <typename Tail>
+__host__ __device__
+inline std::tuple<> GetHead(const std::tuple<Tail> & /*t*/) {
+    return std::tuple<>();
+}
+
+template <typename ... Head, typename Tail>
+__host__ __device__
+inline std::tuple<Head...> GetHead(const std::tuple<Head...,Tail> & t) {
+
+    return TupleSubset(t, typename IntegerList<0,sizeof...(Head)-1>::Type());
+
+}
 
 template <typename TupleT>
 struct TupleReverser;

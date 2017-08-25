@@ -366,6 +366,25 @@ inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndic
 
 //}
 
+template <typename BorderT>
+__host__ __device__
+inline bool BoundsCheck(const IndexList<uint,0> /*dimensions*/,
+                        const std::tuple<> /*remainingPositions*/,
+                        const BorderT /*border*/) {
+    return true;
+}
+
+template <typename BorderT, typename Head, typename ... Tail>
+__host__ __device__
+inline bool BoundsCheck(const IndexList<uint,sizeof...(Tail)+1> dimensions,
+                        const std::tuple<Head, Tail...> remainingPositions,
+                        const BorderT border) {
+
+    const Head firstPosition = std::get<0>(remainingPositions);
+    return (firstPosition >= border && firstPosition <= dimensions.head - 1 - border) &&
+            BoundsCheck(dimensions.tail,GetTail(remainingPositions),border);
+
+}
 
 template <typename Scalar>
 __host__ __device__
@@ -1677,55 +1696,86 @@ public:
     }
 
     // -=-=-=-=-=-=- bounds-checking functions -=-=-=-=-=-=-
-    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
-    inline __host__ __device__ bool InBounds(const PosT d0, const BorderT border) const {
-        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border);
+//    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
+//    inline __host__ __device__ bool InBounds(const PosT d0, const BorderT border) const {
+//        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border);
+//    }
+
+//    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
+//    inline __host__ __device__ bool InBounds(const PosT d0, const PosT d1, const BorderT border) const {
+//        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
+//               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border);
+//    }
+
+//    template <typename BorderT, typename Derived,
+//              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 2 &&
+//                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
+//                                      std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
+//    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
+//        return InBounds(point(0),point(1),border);
+//    }
+
+//    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
+//    inline __host__ __device__ bool InBounds(const PosT d0, const PosT d1, const PosT d2, const BorderT border) const {
+//        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
+//               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border) &&
+//               (d2 >= border) && (d2 <= DimensionSize(2) - 1 - border);
+//    }
+
+//    template <typename BorderT, typename Derived,
+//              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 3 &&
+//                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
+//                                      std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
+//    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
+//        return InBounds(point(0),point(1),point(2),border);
+//    }
+
+//    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
+//    inline __host__ __device__ bool InBounds(const PosT d0, const PosT d1, const PosT d2, const PosT d3, const BorderT border) const {
+//        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
+//               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border) &&
+//               (d2 >= border) && (d2 <= DimensionSize(2) - 1 - border) &&
+//               (d3 >= border) && (d3 <= DimensionSize(3) - 1 - border);
+//    }
+
+//    template <typename BorderT, typename Derived,
+//              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 4 &&
+//                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
+//                                      std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
+//    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
+//        return InBounds(point(0),point(1),point(2),point(3),border);
+//    }
+
+    template <typename PosHead, typename ... PosTail,
+              typename std::enable_if<sizeof...(PosTail) == (D-1) && std::is_fundamental<PosHead>::value, int>::type = 0>
+    inline __host__ __device__ bool InBounds(PosHead head, PosTail... tail) const {
+        return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),
+                                     std::tuple<PosHead,PosTail...>(head,tail...), 0);
     }
 
-    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-    inline __host__ __device__ bool InBounds(const PosT d0, const PosT d1, const BorderT border) const {
-        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
-               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border);
+    template <typename ... PosTs,
+              typename std::enable_if<sizeof...(PosTs) == (D+1), int>::type = 0>
+    inline __host__ __device__ bool InBounds(PosTs... pos) const {
+        const std::tuple<PosTs...> posTuple(pos...);
+        return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),
+                                     internal::TupleSubset(posTuple, typename internal::IntegerList<0,sizeof...(PosTs)-2>::Type()),
+                                     std::get<sizeof...(PosTs)-1>(posTuple));
     }
 
     template <typename BorderT, typename Derived,
-              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 2 &&
-                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
-                                      std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
-        return InBounds(point(0),point(1),border);
+              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
+                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
+    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & pos, BorderT border) const {
+        return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),VectorToTuple(pos),border);
     }
 
-    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
-    inline __host__ __device__ bool InBounds(const PosT d0, const PosT d1, const PosT d2, const BorderT border) const {
-        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
-               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border) &&
-               (d2 >= border) && (d2 <= DimensionSize(2) - 1 - border);
+    template <typename Derived,
+              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
+                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
+    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & pos) const {
+        return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),VectorToTuple(pos),0);
     }
 
-    template <typename BorderT, typename Derived,
-              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 3 &&
-                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
-                                      std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
-        return InBounds(point(0),point(1),point(2),border);
-    }
-
-    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
-    inline __host__ __device__ bool InBounds(const PosT d0, const PosT d1, const PosT d2, const PosT d3, const BorderT border) const {
-        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
-               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border) &&
-               (d2 >= border) && (d2 <= DimensionSize(2) - 1 - border) &&
-               (d3 >= border) && (d3 <= DimensionSize(3) - 1 - border);
-    }
-
-    template <typename BorderT, typename Derived,
-              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 4 &&
-                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
-                                      std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
-        return InBounds(point(0),point(1),point(2),point(3),border);
-    }
 
     // -=-=-=-=-=-=- gradient functions -=-=-=-=-=-=-
     template <typename Derived,
