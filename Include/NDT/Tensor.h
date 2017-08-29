@@ -2056,7 +2056,7 @@ using ConstTensor = Tensor<D,Scalar,HostResident, true>;
 template <int D, typename Scalar>
 using ConstDeviceTensor = Tensor<D,Scalar,DeviceResident, true>;
 
-#define TENSOR_PARTIAL_TYPEDEF_(i,residency)                                         \
+#define __NDT_TENSOR_PARTIAL_TYPEDEF___(i,residency)                                         \
     template <typename Scalar>                                                       \
     using residency##Tensor##i = Tensor<i,Scalar,residency##Resident>;               \
     template <typename Scalar>                                                       \
@@ -2064,54 +2064,77 @@ using ConstDeviceTensor = Tensor<D,Scalar,DeviceResident, true>;
     template <typename Scalar>                                                       \
     using Managed##residency##Tensor##i = ManagedTensor<i,Scalar,residency##Resident>
 
-#define TENSOR_PARTIAL_TYPEDEF(i)                  \
-    TENSOR_PARTIAL_TYPEDEF_(i,Device);             \
-    TENSOR_PARTIAL_TYPEDEF_(i,Host)
+#define __NDT_TENSOR_PARTIAL_TYPEDEF__(i)                  \
+    __NDT_TENSOR_PARTIAL_TYPEDEF___(i,Device);             \
+    __NDT_TENSOR_PARTIAL_TYPEDEF___(i,Host)
 
 //template <typename Scalar>
 //using DeviceTensor2 = Tensor<2,Scalar,DeviceResident>;
 
-TENSOR_PARTIAL_TYPEDEF(1);
-TENSOR_PARTIAL_TYPEDEF(2);
-TENSOR_PARTIAL_TYPEDEF(3);
-TENSOR_PARTIAL_TYPEDEF(4);
-TENSOR_PARTIAL_TYPEDEF(5);
+__NDT_TENSOR_PARTIAL_TYPEDEF__(1);
+__NDT_TENSOR_PARTIAL_TYPEDEF__(2);
+__NDT_TENSOR_PARTIAL_TYPEDEF__(3);
+__NDT_TENSOR_PARTIAL_TYPEDEF__(4);
+__NDT_TENSOR_PARTIAL_TYPEDEF__(5);
 
-template <typename Scalar>
-using Vector = HostTensor1<Scalar>;
+#define __NDT_DIMENSIONAL_ALIAS__(dimension,alias) \
+    template <typename Scalar> \
+    using alias = HostTensor##dimension<Scalar>; \
+    \
+    template <typename Scalar> \
+    using Managed##alias = ManagedHostTensor##dimension<Scalar>; \
+    \
+    template <typename Scalar> \
+    using Device##alias = DeviceTensor##dimension<Scalar>; \
+    \
+    template <typename Scalar> \
+    using ManagedDevice##alias = ManagedDeviceTensor##dimension<Scalar>; \
+    \
+    template <typename Scalar> \
+    using Const##alias = ConstHostTensor##dimension<Scalar>; \
+    \
+    template <typename Scalar> \
+    using ConstDevice##alias = ConstDeviceTensor##dimension<Scalar>
 
-template <typename Scalar>
-using ManagedVector = ManagedHostTensor1<Scalar>;
+__NDT_DIMENSIONAL_ALIAS__(1,Vector);
+__NDT_DIMENSIONAL_ALIAS__(2,Image);
+__NDT_DIMENSIONAL_ALIAS__(3,Volume);
 
-template <typename Scalar>
-using DeviceVector = DeviceTensor1<Scalar>;
+//template <typename Scalar>
+//using Vector = HostTensor1<Scalar>;
 
-template <typename Scalar>
-using ManagedDeviceVector = ManagedDeviceTensor1<Scalar>;
+//template <typename Scalar>
+//using ManagedVector = ManagedHostTensor1<Scalar>;
 
-template <typename Scalar>
-using Image = HostTensor2<Scalar>;
+//template <typename Scalar>
+//using DeviceVector = DeviceTensor1<Scalar>;
 
-template <typename Scalar>
-using ManagedImage = ManagedHostTensor2<Scalar>;
+//template <typename Scalar>
+//using ManagedDeviceVector = ManagedDeviceTensor1<Scalar>;
 
-template <typename Scalar>
-using DeviceImage = DeviceTensor2<Scalar>;
+//template <typename Scalar>
+//using Image = HostTensor2<Scalar>;
 
-template <typename Scalar>
-using ManagedDeviceImage = ManagedDeviceTensor2<Scalar>;
+//template <typename Scalar>
+//using ManagedImage = ManagedHostTensor2<Scalar>;
 
-template <typename Scalar>
-using Volume = HostTensor3<Scalar>;
+//template <typename Scalar>
+//using DeviceImage = DeviceTensor2<Scalar>;
 
-template <typename Scalar>
-using ManagedVolume = ManagedHostTensor3<Scalar>;
+//template <typename Scalar>
+//using ManagedDeviceImage = ManagedDeviceTensor2<Scalar>;
 
-template <typename Scalar>
-using DeviceVolume = DeviceTensor3<Scalar>;
+//template <typename Scalar>
+//using Volume = HostTensor3<Scalar>;
 
-template <typename Scalar>
-using ManagedDeviceVolume = ManagedDeviceTensor3<Scalar>;
+//template <typename Scalar>
+//using ManagedVolume = ManagedHostTensor3<Scalar>;
+
+//template <typename Scalar>
+//using DeviceVolume = DeviceTensor3<Scalar>;
+
+//template <typename Scalar>
+//using ManagedDeviceVolume = ManagedDeviceTensor3<Scalar>;
 
 
 } // namespace NDT
