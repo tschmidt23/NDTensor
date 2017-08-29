@@ -2026,7 +2026,7 @@ private:
 //};
 
 // -=-=-=-=- full tensor typedefs -=-=-=-=-
-#define TENSOR_TYPEDEFS_(i, type, appendix)                                       \
+#define __NDT_TENSOR_TYPEDEFS___(i, type, appendix)                                       \
     typedef Tensor<i,type,HostResident> Tensor##i##appendix;                      \
     typedef Tensor<i,type,DeviceResident> DeviceTensor##i##appendix;              \
     typedef Tensor<i,type,HostResident,true> ConstTensor##i##appendix;            \
@@ -2034,18 +2034,18 @@ private:
     typedef ManagedTensor<i,type,HostResident> ManagedTensor##i##appendix;        \
     typedef ManagedTensor<i,type,DeviceResident> ManagedDeviceTensor##i##appendix
 
-#define TENSOR_TYPEDEFS(type, appendix)  \
-    TENSOR_TYPEDEFS_(1, type, appendix); \
-    TENSOR_TYPEDEFS_(2, type, appendix); \
-    TENSOR_TYPEDEFS_(3, type, appendix); \
-    TENSOR_TYPEDEFS_(4, type, appendix); \
-    TENSOR_TYPEDEFS_(5, type, appendix)
+#define __NDT_TENSOR_TYPEDEFS__(type, appendix)  \
+    __NDT_TENSOR_TYPEDEFS___(1, type, appendix); \
+    __NDT_TENSOR_TYPEDEFS___(2, type, appendix); \
+    __NDT_TENSOR_TYPEDEFS___(3, type, appendix); \
+    __NDT_TENSOR_TYPEDEFS___(4, type, appendix); \
+    __NDT_TENSOR_TYPEDEFS___(5, type, appendix)
 
-TENSOR_TYPEDEFS(float,f);
-TENSOR_TYPEDEFS(double,d);
-TENSOR_TYPEDEFS(int,i);
-TENSOR_TYPEDEFS(uint,ui);
-TENSOR_TYPEDEFS(unsigned char,uc);
+__NDT_TENSOR_TYPEDEFS__(float,f);
+__NDT_TENSOR_TYPEDEFS__(double,d);
+__NDT_TENSOR_TYPEDEFS__(int,i);
+__NDT_TENSOR_TYPEDEFS__(uint,ui);
+__NDT_TENSOR_TYPEDEFS__(unsigned char,uc);
 
 template <int D, typename Scalar>
 using DeviceTensor = Tensor<D,Scalar,DeviceResident>;
@@ -2099,42 +2099,6 @@ __NDT_TENSOR_PARTIAL_TYPEDEF__(5);
 __NDT_DIMENSIONAL_ALIAS__(1,Vector);
 __NDT_DIMENSIONAL_ALIAS__(2,Image);
 __NDT_DIMENSIONAL_ALIAS__(3,Volume);
-
-//template <typename Scalar>
-//using Vector = HostTensor1<Scalar>;
-
-//template <typename Scalar>
-//using ManagedVector = ManagedHostTensor1<Scalar>;
-
-//template <typename Scalar>
-//using DeviceVector = DeviceTensor1<Scalar>;
-
-//template <typename Scalar>
-//using ManagedDeviceVector = ManagedDeviceTensor1<Scalar>;
-
-//template <typename Scalar>
-//using Image = HostTensor2<Scalar>;
-
-//template <typename Scalar>
-//using ManagedImage = ManagedHostTensor2<Scalar>;
-
-//template <typename Scalar>
-//using DeviceImage = DeviceTensor2<Scalar>;
-
-//template <typename Scalar>
-//using ManagedDeviceImage = ManagedDeviceTensor2<Scalar>;
-
-//template <typename Scalar>
-//using Volume = HostTensor3<Scalar>;
-
-//template <typename Scalar>
-//using ManagedVolume = ManagedHostTensor3<Scalar>;
-
-//template <typename Scalar>
-//using DeviceVolume = DeviceTensor3<Scalar>;
-
-//template <typename Scalar>
-//using ManagedDeviceVolume = ManagedDeviceTensor3<Scalar>;
 
 
 } // namespace NDT
