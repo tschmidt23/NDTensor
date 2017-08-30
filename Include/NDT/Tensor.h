@@ -1273,7 +1273,7 @@ struct GradientComputer<Eigen::Matrix<Scalar,R,1,Options>, D, Diff> {
         GradientFiller<Diff,Scalar,R,D,0>::fill(gradient,
                                                 GradientComputeCore<Diff,Interpolator<Eigen::Matrix<Scalar,R,1,Options> >,Scalar,R,D,Options>(data,
                                                                                              internal::IndexList<uint,D>(dimensions.reverse()),
-                                                                                             internal::TupleReverser<std::tuple<IdxTs...> >::reverse(indices),
+                                                                                             internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
                                                                                              Interpolator<Eigen::Matrix<Scalar,R,1,Options> >()),
                                                 data,
                                                 internal::IndexList<uint,D>(dimensions.reverse()),
@@ -1291,7 +1291,7 @@ struct GradientComputer<Eigen::Matrix<Scalar,R,1,Options>, D, Diff> {
         GradientFiller<Diff,Scalar,R,D,0>::fill(gradient,
                                                 GradientComputeCore<Diff,TransformInterpolator<Transformer>,Scalar,R,D,Options>(data,
                                                                                              internal::IndexList<uint,D>(dimensions.reverse()),
-                                                                                             internal::TupleReverser<std::tuple<IdxTs...> >::reverse(indices),
+                                                                                             internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
                                                                                              TransformInterpolator<Transformer>(transformer)),
                                                 data,
                                                 internal::IndexList<uint,D>(dimensions.reverse()),
@@ -1311,7 +1311,7 @@ struct GradientComputer<Eigen::Matrix<Scalar,R,1,Options>, D, Diff> {
         GradientFiller<Diff,Scalar,R,D,0>::fill(gradient,
                                                 GradientComputeCore<Diff,TransformValidOnlyInterpolator<Transformer,ValidityCheck>,Scalar,R,D,Options>(data,
                                                                                              internal::IndexList<uint,D>(dimensions.reverse()),
-                                                                                             internal::TupleReverser<std::tuple<IdxTs...> >::reverse(indices),
+                                                                                             internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
                                                                                              TransformValidOnlyInterpolator<Transformer,ValidityCheck>(transformer,check)),
                                                 data,
                                                 internal::IndexList<uint,D>(dimensions.reverse()),
@@ -1665,7 +1665,7 @@ public:
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
     inline __host__ __device__ T Interpolate(const IdxTs ... vs) const {
         return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
-                                     internal::TupleReverser<std::tuple<IdxTs...> >::reverse(std::tuple<IdxTs...>(vs...)));
+                                     internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
     }
 
     template <typename Derived,
@@ -1681,7 +1681,7 @@ public:
     inline __host__ __device__ T InterpolateValidOnly(ValidityCheck check, IdxTs ... vs) const {
 
         return internal::InterpolateValidOnly(data_,internal::IndexList<DimT,D>(dimensions_.reverse()),
-                                              check, internal::TupleReverser<std::tuple<IdxTs...> >::reverse(std::tuple<IdxTs...>(vs...)));
+                                              check, internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
 
     }
 
