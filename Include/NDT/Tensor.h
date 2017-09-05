@@ -649,19 +649,20 @@ inline typename Transformer::ReturnType TransformInterpolateValidOnly(const Scal
 
 }
 
-template <typename Scalar, typename Transformer, typename ValidityCheck, typename ... IdxTs>
+template <typename Scalar, typename Transformer, typename ValidityCheck, typename FirstIndexT, typename ... IdxTs>
 __host__ __device__
-inline typename Transformer::ReturnType TransformInterpolateValidOnly(const Scalar * data,
+inline
+typename std::enable_if<std::is_floating_point<FirstIndexT>::value,typename Transformer::ReturnType>::type TransformInterpolateValidOnly(const Scalar * data,
                                                                       const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
                                                                       typename Transformer::ScalarType & totalWeight,
                                                                       const typename Transformer::ScalarType thisWeight,
                                                                       Transformer transformer,
                                                                       ValidityCheck check,
-                                                                      const std::tuple<float,IdxTs...> remainingIndices) {
+                                                                      const std::tuple<FirstIndexT,IdxTs...> remainingIndices) {
 
 //    static constexpr uint Length = sizeof...(IdxTs) + 1;
 
-    const float firstIndex = std::get<0>(remainingIndices);
+    const FirstIndexT firstIndex = std::get<0>(remainingIndices);
     const uint i = firstIndex;
     const typename Transformer::ScalarType t = firstIndex - i;
 
