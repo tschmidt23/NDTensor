@@ -6,9 +6,14 @@
 
 #include <Eigen/Core>
 
-#include <cuda_runtime.h>
-
 #include <NDT/TupleHelpers.h>
+
+#ifndef __NDT_NO_CUDA__
+#include <cuda_runtime.h>
+#define __NDT_CUDA_HD_PREFIX__ __host__ __device__
+#else
+#define __NDT_CUDA_HD_PREFIX__
+#endif // __NDT_NO_CUDA__
 
 namespace NDT {
 
@@ -48,6 +53,7 @@ struct ConstQualifier<T *,true> {
 template <Residency DestR, Residency SrcR>
 struct CopyTypeTraits;
 
+#ifndef __NDT_NO_CUDA__
 template <>
 struct CopyTypeTraits<HostResident,DeviceResident> {
     static constexpr cudaMemcpyKind copyType = cudaMemcpyDeviceToHost;
@@ -62,7 +68,7 @@ template <>
 struct CopyTypeTraits<DeviceResident,DeviceResident> {
     static constexpr cudaMemcpyKind copyType = cudaMemcpyDeviceToDevice;
 };
-
+#endif // __NDT_NO_CUDA__
 
 template <typename T, Residency DestR, Residency SrcR>
 struct Copier {
@@ -156,20 +162,20 @@ struct IndexList {
     T head;
     IndexList<T,D-1> tail;
 
-    __host__ __device__
-    inline IndexList(const Eigen::Matrix<T,D,1> & indices)
+
+    inline __NDT_CUDA_HD_PREFIX__ IndexList(const Eigen::Matrix<T,D,1> & indices)
         : head(indices(0)), tail(indices.template tail<D-1>()) { }
 
 //    template <int D2>
-//    __host__ __device__
+//    __NDT_CUDA_HD_PREFIX__
 //    inline IndexList(const Eigen::VectorBlock<const Eigen::Matrix<T,D2,1>,D> & indices))
 
-    __host__ __device__
+    __NDT_CUDA_HD_PREFIX__
     inline T sum() const {
         return head + tail.sum();
     }
 
-    __host__ __device__
+    __NDT_CUDA_HD_PREFIX__
     inline T product() const {
         return head * tail.product();
     }
@@ -180,16 +186,16 @@ struct IndexList {
 //struct IndexList<T,1> {
 //    T head;
 
-//    __host__ __device__
+//    __NDT_CUDA_HD_PREFIX__
 //    inline IndexList(const Eigen::Matrix<T,1,1> & indices)
 //        : head(indices(0)) { }
 
-//    __host__ __device__
+//    __NDT_CUDA_HD_PREFIX__
 //    inline T sum() const {
 //        return head;
 //    }
 
-//    __host__ __device__
+//    __NDT_CUDA_HD_PREFIX__
 //    inline T product() const {
 //        return head;
 //    }
@@ -199,15 +205,15 @@ struct IndexList {
 template <typename T>
 struct IndexList<T,0> {
 
-    __host__ __device__
+    __NDT_CUDA_HD_PREFIX__
     inline IndexList(const Eigen::Matrix<T,0,1> & indices) { }
 
-    __host__ __device__
+    __NDT_CUDA_HD_PREFIX__
     inline T sum() const {
         return 0;
     }
 
-    __host__ __device__
+    __NDT_CUDA_HD_PREFIX__
     inline T product() const {
         return 1;
     }
@@ -215,34 +221,34 @@ struct IndexList<T,0> {
 };
 
 template <typename T>
-inline __host__ __device__ IndexList<T,1> IndexList1(const T i0) {
+inline __NDT_CUDA_HD_PREFIX__ IndexList<T,1> IndexList1(const T i0) {
     return { i0, IndexList<T,0>() };
 }
 
 template <typename T>
-inline __host__ __device__ IndexList<T,2> IndexList2(const T i0, const T i1) {
+inline __NDT_CUDA_HD_PREFIX__ IndexList<T,2> IndexList2(const T i0, const T i1) {
     return { i0, IndexList1(i1) };
 }
 
 template <typename T>
-inline __host__ __device__ IndexList<T,3> IndexList3(const T i0, const T i1, const T i2) {
+inline __NDT_CUDA_HD_PREFIX__ IndexList<T,3> IndexList3(const T i0, const T i1, const T i2) {
     return { i0, IndexList2(i1, i2) };
 }
 
 template <typename T>
-inline __host__ __device__ IndexList<T,4> IndexList4(const T i0, const T i1, const T i2, const T i3) {
+inline __NDT_CUDA_HD_PREFIX__ IndexList<T,4> IndexList4(const T i0, const T i1, const T i2, const T i3) {
     return { i0, IndexList3(i1, i2, i3) };
 }
 
 template <typename IdxT, typename DimT, int D>
-inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,D> dimIndices, const IndexList<DimT,D-1> dimSizes) {
+inline __NDT_CUDA_HD_PREFIX__ std::size_t OffsetXD(const IndexList<IdxT,D> dimIndices, const IndexList<DimT,D-1> dimSizes) {
 
     return dimIndices.head + dimSizes.head*OffsetXD(dimIndices.tail,dimSizes.tail);
 
 }
 
 template <typename IdxT, typename DimT>
-inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndices, const IndexList<DimT,0> dimSizes) {
+inline __NDT_CUDA_HD_PREFIX__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndices, const IndexList<DimT,0> dimSizes) {
 
     return dimIndices.head;
 
@@ -251,7 +257,7 @@ inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndic
 
 
 //template <typename IdxT, typename DimT>
-//inline __host__ __device__ std::size_t offsetXD(const IndexList<IdxT,2> dimIndices, const IndexList<DimT,1> dimSizes) {
+//inline __NDT_CUDA_HD_PREFIX__ std::size_t offsetXD(const IndexList<IdxT,2> dimIndices, const IndexList<DimT,1> dimSizes) {
 
 //    return dimIndices.head + dimSizes.head*dimIndices.tail.head;
 
@@ -271,7 +277,7 @@ inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndic
 
 //    static constexpr uint Length = sizeof...(IdxTs) + 1;
 
-//    __host__ __device__
+//    __NDT_CUDA_HD_PREFIX__
 //    static inline Scalar interpolate(const Scalar * data,
 //                                     const Eigen::Matrix<uint,Length,1> dimensions,
 //                                     float firstIndex, IdxTs ... remainingIndices) {
@@ -295,7 +301,7 @@ inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndic
 
 //    static constexpr uint Length = sizeof...(IdxTs) + 1;
 
-//    __host__ __device__
+//    __NDT_CUDA_HD_PREFIX__
 //    static inline Scalar interpolate(const Scalar * data,
 //                                     const Eigen::Matrix<uint,Length,1> dimensions,
 //                                     int firstIndex, IdxTs ... remainingIndices) {
@@ -313,7 +319,7 @@ inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndic
 
 //    static constexpr uint Length = 0;
 
-//    __host__ __device__
+//    __NDT_CUDA_HD_PREFIX__
 //    static inline Scalar interpolate(const Scalar * data,
 //                                     const Eigen::Matrix<uint,Length,1> dimensions) {
 
@@ -324,7 +330,7 @@ inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndic
 //};
 
 //template <typename Scalar>
-//__host__ __device__
+//__NDT_CUDA_HD_PREFIX__
 //inline Scalar interpolate(const Scalar * data,
 //                          const Eigen::Matrix<uint,0,1> dimensions) {
 
@@ -333,7 +339,7 @@ inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndic
 //}
 
 //template <typename Scalar, typename ... IdxTs>
-//__host__ __device__
+//__NDT_CUDA_HD_PREFIX__
 //inline Scalar interpolate(const Scalar * data,
 //                          const Eigen::Matrix<uint,sizeof...(IdxTs)+1,1> dimensions,
 //                          float firstIndex, IdxTs ... remainingIndices) {
@@ -353,7 +359,7 @@ inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndic
 //}
 
 //template <typename Scalar, typename ... IdxTs>
-//__host__ __device__
+//__NDT_CUDA_HD_PREFIX__
 //inline Scalar interpolate(const Scalar * data,
 //                          const Eigen::Matrix<uint,sizeof...(IdxTs) + 1,1> dimensions,
 //                          int firstIndex, IdxTs ... remainingIndices) {
@@ -367,7 +373,7 @@ inline __host__ __device__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndic
 //}
 
 template <typename BorderT>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline bool BoundsCheck(const IndexList<uint,0> /*dimensions*/,
                         const std::tuple<> /*remainingPositions*/,
                         const BorderT /*borderLow*/,
@@ -376,7 +382,7 @@ inline bool BoundsCheck(const IndexList<uint,0> /*dimensions*/,
 }
 
 template <typename BorderT, typename Head, typename ... Tail>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline bool BoundsCheck(const IndexList<uint,sizeof...(Tail)+1> dimensions,
                         const std::tuple<Head, Tail...> remainingPositions,
                         const BorderT borderLow,
@@ -389,7 +395,7 @@ inline bool BoundsCheck(const IndexList<uint,sizeof...(Tail)+1> dimensions,
 }
 
 template <typename Scalar>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline Scalar Interpolate(const Scalar * data,
                           const IndexList<uint,0> /*dimensions*/,
                           const std::tuple<> /*remainingIndices*/) {
@@ -399,7 +405,7 @@ inline Scalar Interpolate(const Scalar * data,
 }
 
 template <typename Scalar,typename ... IdxTs>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline Scalar Interpolate(const Scalar * data,
                           const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
                           const std::tuple<float, IdxTs...> remainingIndices) {
@@ -418,7 +424,7 @@ inline Scalar Interpolate(const Scalar * data,
 }
 
 template <typename Scalar, typename ... IdxTs>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline Scalar Interpolate(const Scalar * data,
                           const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
                           const std::tuple<int, IdxTs...> remainingIndices) {
@@ -433,7 +439,7 @@ inline Scalar Interpolate(const Scalar * data,
 
 
 template <typename Scalar, typename ValidityCheck>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline Scalar InterpolateValidOnly(const Scalar * data,
                                    const IndexList<uint,0> dimensions,
                                    float & totalWeight,
@@ -455,7 +461,7 @@ inline Scalar InterpolateValidOnly(const Scalar * data,
 }
 
 template <typename Scalar, typename ValidityCheck, typename ... IdxTs>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline Scalar InterpolateValidOnly(const Scalar * data,
                                    const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
                                    float & totalWeight,
@@ -483,7 +489,7 @@ inline Scalar InterpolateValidOnly(const Scalar * data,
 }
 
 template <typename Scalar, typename ValidityCheck, typename ... IdxTs>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline Scalar InterpolateValidOnly(const Scalar * data,
                                    const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
                                    float & totalWeight,
@@ -503,7 +509,7 @@ inline Scalar InterpolateValidOnly(const Scalar * data,
 }
 
 template <typename Scalar, typename ValidityCheck, typename ... IdxTs>
-__host__ __device__ inline Scalar InterpolateValidOnly(const Scalar * data,
+__NDT_CUDA_HD_PREFIX__ inline Scalar InterpolateValidOnly(const Scalar * data,
                                                        const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                                        ValidityCheck check,
                                                        std::tuple<IdxTs...> indices) {
@@ -524,7 +530,7 @@ __host__ __device__ inline Scalar InterpolateValidOnly(const Scalar * data,
 // be the first type in the variadic parameter pack??
 // the only tricky part would be deducing the return type through the recursive calls
 //template <typename Scalar, typename Transformer>
-//__host__ __device__
+//__NDT_CUDA_HD_PREFIX__
 //inline typename Transformer::ReturnType TransformInterpolate(const Scalar * data,
 //                                                             const Eigen::Matrix<uint,0,1> dimensions,
 //                                                             Transformer transformer) {
@@ -534,7 +540,7 @@ __host__ __device__ inline Scalar InterpolateValidOnly(const Scalar * data,
 //}
 
 //template <typename Scalar, typename Transformer, typename ... IdxTs>
-//__host__ __device__
+//__NDT_CUDA_HD_PREFIX__
 //inline typename Transformer::ReturnType TransformInterpolate(const Scalar * data,
 //                                                             const Eigen::Matrix<uint,sizeof...(IdxTs)+1,1> dimensions,
 //                                                             Transformer transformer,
@@ -557,7 +563,7 @@ __host__ __device__ inline Scalar InterpolateValidOnly(const Scalar * data,
 //}
 
 //template <typename Scalar, typename Transformer, typename ... IdxTs>
-//__host__ __device__
+//__NDT_CUDA_HD_PREFIX__
 //inline typename Transformer::ReturnType TransformInterpolate(const Scalar * data,
 //                                                             const Eigen::Matrix<uint,sizeof...(IdxTs) + 1,1> dimensions,
 //                                                             Transformer transformer,
@@ -573,28 +579,28 @@ __host__ __device__ inline Scalar InterpolateValidOnly(const Scalar * data,
 //}
 
 template <typename Scalar, typename Transformer>
-__host__ __device__
-inline typename Transformer::ReturnType TransformInterpolate(const Scalar * data,
-                                                             const IndexList<uint,0> /*dimensions*/,
-                                                             Transformer transformer,
-                                                             const std::tuple<> /*remainingIndices*/) {
+__NDT_CUDA_HD_PREFIX__
+inline auto TransformInterpolate(const Scalar * data,
+                                 const IndexList<uint,0> /*dimensions*/,
+                                 Transformer transformer,
+                                 const std::tuple<> /*remainingIndices*/)  -> decltype(transformer(*data)) {
 
     return transformer(*data);
 
 }
 
 template <typename Scalar, typename Transformer, typename ... IdxTs>
-__host__ __device__
-inline typename Transformer::ReturnType TransformInterpolate(const Scalar * data,
-                                                             const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
-                                                             Transformer transformer,
-                                                             const std::tuple<float, IdxTs...> remainingIndices) {
+__NDT_CUDA_HD_PREFIX__
+inline auto TransformInterpolate(const Scalar * data,
+                                 const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
+                                 Transformer transformer,
+                                 const std::tuple<float, IdxTs...> remainingIndices) -> decltype(transformer(*data)) {
 
 //    static constexpr uint Length = sizeof...(IdxTs) + 1;
 
     const float firstIndex = std::get<0>(remainingIndices);
     const uint i = firstIndex;
-    const typename Transformer::ScalarType t = firstIndex - i;
+    const float t = firstIndex - i;
 
     return (1-t)*TransformInterpolate(data + i*dimensions.tail.product(),
                                       dimensions.tail,
@@ -608,11 +614,11 @@ inline typename Transformer::ReturnType TransformInterpolate(const Scalar * data
 }
 
 template <typename Scalar, typename Transformer, typename ... IdxTs>
-__host__ __device__
-inline typename Transformer::ReturnType TransformInterpolate(const Scalar * data,
-                                                             const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
-                                                             Transformer transformer,
-                                                             const std::tuple<int, IdxTs...> remainingIndices) {
+__NDT_CUDA_HD_PREFIX__
+inline /*auto*/ typename Transformer::ReturnType TransformInterpolate(const Scalar * data,
+                                 const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
+                                 Transformer transformer,
+                                 const std::tuple<int, IdxTs...> remainingIndices) /*-> decltype(tranformer(*data))*/ {
 
 //    static constexpr uint Length = sizeof...(IdxTs) + 1;
 
@@ -627,7 +633,7 @@ inline typename Transformer::ReturnType TransformInterpolate(const Scalar * data
 
 
 template <typename Scalar, typename Transformer, typename ValidityCheck>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline typename Transformer::ReturnType TransformInterpolateValidOnly(const Scalar * data,
                                                                       const IndexList<uint,0> /*dimensions*/,
                                                                       typename Transformer::ScalarType & totalWeight,
@@ -650,7 +656,7 @@ inline typename Transformer::ReturnType TransformInterpolateValidOnly(const Scal
 }
 
 template <typename Scalar, typename Transformer, typename ValidityCheck, typename FirstIndexT, typename ... IdxTs>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline
 typename std::enable_if<std::is_floating_point<FirstIndexT>::value,typename Transformer::ReturnType>::type TransformInterpolateValidOnly(const Scalar * data,
                                                                       const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
@@ -684,7 +690,7 @@ typename std::enable_if<std::is_floating_point<FirstIndexT>::value,typename Tran
 }
 
 template <typename Scalar, typename Transformer, typename ValidityCheck, typename ... IdxTs>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline typename Transformer::ReturnType TransformInterpolateValidOnly(const Scalar * data,
                                                                       const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
                                                                       typename Transformer::ScalarType & totalWeight,
@@ -706,7 +712,7 @@ inline typename Transformer::ReturnType TransformInterpolateValidOnly(const Scal
 }
 
 template <typename Scalar, typename Transformer, typename ValidityCheck, typename ... IdxTs>
-__host__ __device__ inline typename Transformer::ReturnType TransformInterpolateValidOnly(const Scalar * data,
+__NDT_CUDA_HD_PREFIX__ inline typename Transformer::ReturnType TransformInterpolateValidOnly(const Scalar * data,
                                                                                           const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                                                                           Transformer transformer,
                                                                                           ValidityCheck check,
@@ -724,7 +730,7 @@ __host__ __device__ inline typename Transformer::ReturnType TransformInterpolate
 }
 
 //template <typename Scalar, typename ValidityCheck, typename ... IdxTs>
-//__host__ __device__
+//__NDT_CUDA_HD_PREFIX__
 //inline Scalar interpolateValidOnly(const Scalar * data,
 //                                   const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
 //                                   float & totalWeight,
@@ -744,7 +750,7 @@ __host__ __device__ inline typename Transformer::ReturnType TransformInterpolate
 //}
 
 //template <typename Scalar, typename ValidityCheck, typename ... IdxTs>
-//__host__ __device__ inline Scalar interpolateValidOnly(const Scalar * data,
+//__NDT_CUDA_HD_PREFIX__ inline Scalar interpolateValidOnly(const Scalar * data,
 //                                                      const IndexList<uint,sizeof...(IdxTs)> dimensions,
 //                                                      ValidityCheck check,
 //                                                      std::tuple<IdxTs...> indices) {
@@ -761,7 +767,7 @@ __host__ __device__ inline typename Transformer::ReturnType TransformInterpolate
 //}
 
 template <typename Scalar, typename ValidityCheck>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline bool validForInterpolation(const Scalar * data,
                                    const IndexList<uint,0> dimensions,
                                    ValidityCheck check,
@@ -772,7 +778,7 @@ inline bool validForInterpolation(const Scalar * data,
 }
 
 template <typename Scalar, typename ValidityCheck, typename ... IdxTs>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline bool validForInterpolation(const Scalar * data,
                                   const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
                                   ValidityCheck check,
@@ -792,7 +798,7 @@ inline bool validForInterpolation(const Scalar * data,
 }
 
 template <typename Scalar, typename Transformer, typename ... IdxTs>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline bool validForInterpolation(const Scalar * data,
                                  const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
                                  Transformer check,
@@ -822,7 +828,7 @@ inline bool validForInterpolation(const Scalar * data,
 //    typedef TypeList<float,Tail> IndexTypeList;
 //    static constexpr uint Length = IndexTypeList::Length;
 
-//    __host__ __device__ static
+//    __NDT_CUDA_HD_PREFIX__ static
 //    inline Scalar interpolate(const CompositedTypeListInstantiation<IndexTypeList> indices,
 //                              const Scalar * data,
 //                              const Eigen::Matrix<uint,IndexTypeList::Length,1> dimensions) {
@@ -850,7 +856,7 @@ inline bool validForInterpolation(const Scalar * data,
 //    typedef TypeList<int,Tail> IndexTypeList;
 //    static constexpr uint Length = IndexTypeList::Length;
 
-//    __host__ __device__ static
+//    __NDT_CUDA_HD_PREFIX__ static
 //    inline Scalar interpolate(const CompositedTypeListInstantiation<IndexTypeList> indices,
 //                              const Scalar * data,
 //                              const Eigen::Matrix<uint,Length,1> dimensions) {
@@ -870,7 +876,7 @@ inline bool validForInterpolation(const Scalar * data,
 //    typedef TypeList<float,NullType> IndexTypeList;
 //    static constexpr uint Length = IndexTypeList::Length;
 
-//    __host__ __device__ static
+//    __NDT_CUDA_HD_PREFIX__ static
 //    inline Scalar interpolate(const CompositedTypeListInstantiation<IndexTypeList> indices,
 //                              const Scalar * data,
 //                              const Eigen::Matrix<uint,Length,1> /*dimensions*/) {
@@ -890,7 +896,7 @@ inline bool validForInterpolation(const Scalar * data,
 //    typedef TypeList<int,NullType> IndexTypeList;
 //    static constexpr uint Length = IndexTypeList::Length;
 
-//    __host__ __device__ static
+//    __NDT_CUDA_HD_PREFIX__ static
 //    inline Scalar interpolate(const CompositedTypeListInstantiation<IndexTypeList> indices,
 //                              const Scalar * data,
 //                              const Eigen::Matrix<uint,Length,1> /*dimensions*/) {
@@ -910,7 +916,7 @@ enum DifferenceType {
 template <int I, int Diff, typename ... IdxTs>
 struct GradientReindex {
 
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     static std::tuple<IdxTs...> reindex(std::tuple<IdxTs...> tuple) {
 //        std::cout << std::get<I>(tuple) << " -> ";
         std::get<I>(tuple) += Diff;
@@ -927,7 +933,7 @@ struct Interpolator {
     typedef Scalar ReturnType;
 
     template <typename ... IdxTs>
-    inline __host__ __device__ ReturnType interpolate(const InputType * data,
+    inline __NDT_CUDA_HD_PREFIX__ ReturnType interpolate(const InputType * data,
                                                       const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                                       const std::tuple<IdxTs...> & indices) const {
 
@@ -943,10 +949,10 @@ struct TransformInterpolator {
     typedef typename Transformer::InputType InputType;
     typedef typename Transformer::ReturnType ReturnType;
 
-    inline __host__ __device__ TransformInterpolator(Transformer transformer) : transformer(transformer) { }
+    inline __NDT_CUDA_HD_PREFIX__ TransformInterpolator(Transformer transformer) : transformer(transformer) { }
 
     template <typename ... IdxTs>
-    inline __host__ __device__ ReturnType interpolate(const InputType * data,
+    inline __NDT_CUDA_HD_PREFIX__ ReturnType interpolate(const InputType * data,
                                                       const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                                       const std::tuple<IdxTs...> & indices) const {
 
@@ -966,11 +972,11 @@ struct TransformValidOnlyInterpolator {
     typedef typename Transformer::InputType InputType;
     typedef typename Transformer::ReturnType ReturnType;
 
-    inline __host__ __device__ TransformValidOnlyInterpolator(Transformer transformer, ValidityCheck check)
+    inline __NDT_CUDA_HD_PREFIX__ TransformValidOnlyInterpolator(Transformer transformer, ValidityCheck check)
         : transformer(transformer), check(check) { }
 
     template <typename ... IdxTs>
-    inline __host__ __device__ typename Transformer::ReturnType interpolate(const typename Transformer::InputType * data,
+    inline __NDT_CUDA_HD_PREFIX__ typename Transformer::ReturnType interpolate(const typename Transformer::InputType * data,
                                                                             const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                                                             const std::tuple<IdxTs...> & indices) const {
 
@@ -993,7 +999,7 @@ template <typename Scalar, typename InterpolatorType, int R, int D, int Options>
 struct GradientComputeCore<BackwardDifference, InterpolatorType, Scalar, R, D, Options> {
 
     template <typename ... IdxTs>
-    __host__ __device__ inline GradientComputeCore(const typename InterpolatorType::InputType * data,
+    __NDT_CUDA_HD_PREFIX__ inline GradientComputeCore(const typename InterpolatorType::InputType * data,
                                                    const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                                    const std::tuple<IdxTs...> & indices,
                                                    InterpolatorType interpolator)
@@ -1001,7 +1007,7 @@ struct GradientComputeCore<BackwardDifference, InterpolatorType, Scalar, R, D, O
           center(interpolator.interpolate(data,dimensions,indices)) { }
 
     template <int I, typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     Eigen::Matrix<Scalar,R,1,Options> compute(const typename InterpolatorType::InputType * data,
                                               const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                               const std::tuple<IdxTs...> & indices) const {
@@ -1022,7 +1028,7 @@ template <typename Scalar, typename InterpolatorType, int D, int Options>
 struct GradientComputeCore<BackwardDifference, InterpolatorType, Scalar, 1, D, Options> {
 
     template <typename ... IdxTs>
-    __host__ __device__ inline GradientComputeCore(const typename InterpolatorType::InputType * data,
+    __NDT_CUDA_HD_PREFIX__ inline GradientComputeCore(const typename InterpolatorType::InputType * data,
                                                    const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                                    const std::tuple<IdxTs...> & indices,
                                                    InterpolatorType interpolator)
@@ -1030,7 +1036,7 @@ struct GradientComputeCore<BackwardDifference, InterpolatorType, Scalar, 1, D, O
           center(interpolator.interpolate(data,dimensions,indices)) { }
 
     template <int I, typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     Scalar compute(const typename InterpolatorType::InputType * data,
                    const IndexList<uint,sizeof...(IdxTs)> dimensions,
                    const std::tuple<IdxTs...> & indices) const {
@@ -1052,14 +1058,14 @@ template <typename Scalar, typename InterpolatorType, int R, int D, int Options>
 struct GradientComputeCore<CentralDifference, InterpolatorType, Scalar, R, D, Options> {
 
     template <typename ... IdxTs>
-    __host__ __device__ inline GradientComputeCore(const Eigen::Matrix<Scalar,R,1,Options> * /*data*/,
+    __NDT_CUDA_HD_PREFIX__ inline GradientComputeCore(const Eigen::Matrix<Scalar,R,1,Options> * /*data*/,
                         const IndexList<uint,sizeof...(IdxTs)> /*dimensions*/,
                         const std::tuple<IdxTs...> & /*indices*/,
                         InterpolatorType interpolator)
         : interpolator(interpolator) { }
 
     template <int I, typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     Eigen::Matrix<Scalar,R,1,Options> compute(const Eigen::Matrix<Scalar,R,1,Options> * data,
                                               const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                               const std::tuple<IdxTs...> & indices) const {
@@ -1078,14 +1084,14 @@ template <typename Scalar, typename InterpolatorType, int D, int Options>
 struct GradientComputeCore<CentralDifference, InterpolatorType, Scalar, 1, D, Options> {
 
     template <typename ... IdxTs>
-    __host__ __device__ inline GradientComputeCore(const typename InterpolatorType::InputType * /*data*/,
+    __NDT_CUDA_HD_PREFIX__ inline GradientComputeCore(const typename InterpolatorType::InputType * /*data*/,
                         const IndexList<uint,sizeof...(IdxTs)> /*dimensions*/,
                         const std::tuple<IdxTs...> & /*indices*/,
                         InterpolatorType interpolator)
         : interpolator(interpolator) { }
 
     template <int I, typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     Scalar compute(const typename InterpolatorType::InputType * data,
                    const IndexList<uint,sizeof...(IdxTs)> dimensions,
                    const std::tuple<IdxTs...> & indices) const {
@@ -1106,7 +1112,7 @@ template <typename Scalar, typename InterpolatorType, int R, int D, int Options>
 struct GradientComputeCore<ForwardDifference, InterpolatorType, Scalar, R, D, Options> {
 
     template <typename ... IdxTs>
-     __host__ __device__ inline GradientComputeCore(const typename InterpolatorType::InputType * data,
+     __NDT_CUDA_HD_PREFIX__ inline GradientComputeCore(const typename InterpolatorType::InputType * data,
                                                     const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                                     const std::tuple<IdxTs...> & indices,
                                                     InterpolatorType interpolator)
@@ -1114,7 +1120,7 @@ struct GradientComputeCore<ForwardDifference, InterpolatorType, Scalar, R, D, Op
           center(interpolator.interpolate(data,dimensions,indices)) { }
 
     template <int I, typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     Eigen::Matrix<Scalar,R,1,Options> compute(const typename InterpolatorType::InputType * data,
                                               const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                               const std::tuple<IdxTs...> & indices) const {
@@ -1136,7 +1142,7 @@ template <DifferenceType Diff, typename Scalar, int R, int D, int I>
 struct GradientFiller {
 
     template <int Options, typename InterpolatorT, typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     static void fill(Eigen::Matrix<Scalar,R,D,Options> & gradient,
                      const GradientComputeCore<Diff,InterpolatorT,Scalar,R,D,Options> & core,
                      const typename InterpolatorT::InputType * data,
@@ -1152,7 +1158,7 @@ template <DifferenceType Diff, typename Scalar, int R, int D>
 struct GradientFiller<Diff,Scalar, R, D, D> {
 
     template <int Options, typename InterpolatorT, typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     static void fill(Eigen::Matrix<Scalar,R,D,Options> & /*gradient*/,
                      const GradientComputeCore<Diff,InterpolatorT,Scalar,R,D,Options> & /*core*/,
                      const typename InterpolatorT::InputType * /*data*/,
@@ -1166,7 +1172,7 @@ template <DifferenceType Diff, typename Scalar, int D, int I>
 struct GradientFiller<Diff, Scalar,1,D,I> {
 
     template <int Options, typename InterpolatorT, typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     static void fill(Eigen::Matrix<Scalar,1,D,Options> & gradient,
                      const GradientComputeCore<Diff,InterpolatorT,Scalar,1,D,Options> & core,
                      const typename InterpolatorT::InputType * data,
@@ -1185,7 +1191,7 @@ template <DifferenceType Diff,typename Scalar, int D>
 struct GradientFiller<Diff,Scalar, 1, D, D> {
 
     template <int Options, typename InterpolatorT, typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     static void fill(Eigen::Matrix<Scalar,1,D,Options> & /*gradient*/,
                      const GradientComputeCore<Diff,InterpolatorT,Scalar,1,D,Options> & /*core*/,
                      const typename InterpolatorT::InputType * /*data*/,
@@ -1201,7 +1207,7 @@ struct GradientComputer {
     typedef Eigen::Matrix<Scalar,1,D,Eigen::DontAlign | Eigen::RowMajor> GradientType;
 
     template <typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     static GradientType compute(const Scalar * data,
                                 const Eigen::Matrix<uint,D,1> & dimensions,
                                 const std::tuple<IdxTs...> & indices) {
@@ -1218,7 +1224,7 @@ struct GradientComputer {
     }
 
     template <typename Transformer, typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     static GradientType TransformCompute(const Transformer transformer,
                                          const typename Transformer::InputType * data,
                                          const Eigen::Matrix<uint,D,1> & dimensions,
@@ -1238,7 +1244,7 @@ struct GradientComputer {
     }
 
     template <typename Transformer, typename ValidityCheck, typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     static GradientType TransformComputeValidOnly(Transformer transformer,
                                                   ValidityCheck check,
                                                   const typename Transformer::InputType * data,
@@ -1266,7 +1272,7 @@ struct GradientComputer<Eigen::Matrix<Scalar,R,1,Options>, D, Diff> {
     typedef Eigen::Matrix<Scalar,R,D,Options> GradientType;
 
     template <typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     static GradientType compute(const Eigen::Matrix<Scalar,R,1,Options> * data,
                                 const Eigen::Matrix<uint,D,1> & dimensions,
                                 const std::tuple<IdxTs...> & indices) {
@@ -1283,7 +1289,7 @@ struct GradientComputer<Eigen::Matrix<Scalar,R,1,Options>, D, Diff> {
     }
 
     template <typename Transformer, typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     static GradientType TransformCompute(const Transformer transformer,
                                          const typename Transformer::InputType * data,
                                          const Eigen::Matrix<uint,D,1> & dimensions,
@@ -1302,7 +1308,7 @@ struct GradientComputer<Eigen::Matrix<Scalar,R,1,Options>, D, Diff> {
     }
 
     template <typename ValidityCheck, typename Transformer, typename ... IdxTs>
-    __host__ __device__ inline
+    __NDT_CUDA_HD_PREFIX__ inline
     static GradientType TransformComputeValidOnly(Transformer transformer,
                                                   ValidityCheck check,
                                                   const typename Transformer::InputType * data,
@@ -1347,7 +1353,7 @@ struct DifferenceTypeTraits<ForwardDifference> {
 template <typename ... IdxTs>
 struct IndexTypePrinter {
 
-    static inline __host__ __device__ void print() {
+    static inline __NDT_CUDA_HD_PREFIX__ void print() {
         std::cout << std::endl;
     }
 
@@ -1356,7 +1362,7 @@ struct IndexTypePrinter {
 template <typename ... IdxTs>
 struct IndexTypePrinter<int,IdxTs...> {
 
-    static inline __host__ __device__ void print(int v0, IdxTs... vs) {
+    static inline __NDT_CUDA_HD_PREFIX__ void print(int v0, IdxTs... vs) {
         std::cout << "int ";
         IndexTypePrinter<IdxTs...>::print(vs...);
     }
@@ -1366,7 +1372,7 @@ struct IndexTypePrinter<int,IdxTs...> {
 template <typename ... IdxTs>
 struct IndexTypePrinter<float,IdxTs...> {
 
-    static inline __host__ __device__ void print(float v0, IdxTs... vs) {
+    static inline __NDT_CUDA_HD_PREFIX__ void print(float v0, IdxTs... vs) {
         std::cout << "float ";
         IndexTypePrinter<IdxTs...>::print(vs...);
     }
@@ -1393,28 +1399,28 @@ public:
     typedef unsigned int IdxT;
 
     template <int D2 = D, typename std::enable_if<D2 == 1,int>::type = 0>
-    __host__ __device__ Tensor(const DimT length) : dimensions_(Eigen::Matrix<DimT,D,1>(length)), data_(nullptr) { }
+    __NDT_CUDA_HD_PREFIX__ Tensor(const DimT length) : dimensions_(Eigen::Matrix<DimT,D,1>(length)), data_(nullptr) { }
 
-    __host__ __device__ Tensor(const Eigen::Matrix<DimT,D,1> & dimensions) : dimensions_(dimensions), data_(nullptr) { }
+    __NDT_CUDA_HD_PREFIX__ Tensor(const Eigen::Matrix<DimT,D,1> & dimensions) : dimensions_(dimensions), data_(nullptr) { }
 
     template <int D2 = D, typename std::enable_if<D2 == 1,int>::type = 0>
-    __host__ __device__ Tensor(const DimT length, typename internal::ConstQualifier<T *,Const>::type data) :
+    __NDT_CUDA_HD_PREFIX__ Tensor(const DimT length, typename internal::ConstQualifier<T *,Const>::type data) :
         dimensions_(Eigen::Matrix<DimT,D,1>(length)), data_(data) { }
 
     // construct with values, not valid for managed tensors
-    __host__ __device__ Tensor(const Eigen::Matrix<DimT,D,1> & dimensions,
+    __NDT_CUDA_HD_PREFIX__ Tensor(const Eigen::Matrix<DimT,D,1> & dimensions,
                                typename internal::ConstQualifier<T *,Const>::type data) : dimensions_(dimensions), data_(data) { }
 
     // copy constructor and assignment operator, not valid for managed or const tensors
     template <bool _Const>
-    __host__ __device__  Tensor(Tensor<D,T,R,_Const> & other)
+    __NDT_CUDA_HD_PREFIX__  Tensor(Tensor<D,T,R,_Const> & other)
         : dimensions_(other.Dimensions()), data_(other.Data()) {
         static_assert(Const || !_Const,
                       "Cannot copy-construct a non-const Tensor from a Const tensor");
     }
 
     template <bool _Const>
-    __host__ __device__ inline Tensor<D,T,R,Const> & operator=(const Tensor<D,T,R,_Const> & other) {
+    __NDT_CUDA_HD_PREFIX__ inline Tensor<D,T,R,Const> & operator=(const Tensor<D,T,R,_Const> & other) {
         static_assert(Const || !_Const,
                       "Cannot assign a non-const Tensor from a Const tensor");
         dimensions_ = other.Dimensions();
@@ -1422,7 +1428,7 @@ public:
         return *this;
     }
 
-    __host__ __device__ ~Tensor() { }
+    __NDT_CUDA_HD_PREFIX__ ~Tensor() { }
 
     // conversion to const tensor
     template <bool _Const = Const, typename std::enable_if<!_Const,int>::type = 0>
@@ -1432,62 +1438,62 @@ public:
 
     template <typename U = T,
               typename std::enable_if<!Const && sizeof(U), int>::type = 0>
-    inline __host__ __device__ T * Data() { return data_; }
+    inline __NDT_CUDA_HD_PREFIX__ T * Data() { return data_; }
 
-    inline __host__ __device__ const T * Data() const { return data_; }
+    inline __NDT_CUDA_HD_PREFIX__ const T * Data() const { return data_; }
 
     // -=-=-=-=-=-=- sizing functions -=-=-=-=-=-=-
-    inline __host__ __device__ DimT DimensionSize(const IdxT dim) const {
+    inline __NDT_CUDA_HD_PREFIX__ DimT DimensionSize(const IdxT dim) const {
         return dimensions_(dim);
     }
 
-    inline __host__ __device__ const Eigen::Matrix<DimT,D,1,Eigen::DontAlign> & Dimensions() const {
+    inline __NDT_CUDA_HD_PREFIX__ const Eigen::Matrix<DimT,D,1,Eigen::DontAlign> & Dimensions() const {
         return dimensions_;
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
-    inline __host__ __device__ DimT Length() const {
+    inline __NDT_CUDA_HD_PREFIX__ DimT Length() const {
         return dimensions_(0);
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-    inline __host__ __device__ DimT Width() const {
+    inline __NDT_CUDA_HD_PREFIX__ DimT Width() const {
         return dimensions_(0);
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-    inline __host__ __device__ DimT Height() const {
+    inline __NDT_CUDA_HD_PREFIX__ DimT Height() const {
         return dimensions_(1);
     }
 
-    inline __host__ __device__ std::size_t Count() const {
+    inline __NDT_CUDA_HD_PREFIX__ std::size_t Count() const {
 //        return internal::count<DimT,D>(dimensions_);
         return dimensions_.prod();
     }
 
-    inline __host__ __device__ std::size_t SizeBytes() const {
+    inline __NDT_CUDA_HD_PREFIX__ std::size_t SizeBytes() const {
         return Count() * sizeof(T);
     }
 
     // -=-=-=-=-=-=- indexing functions -=-=-=-=-=-=-
     template <int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
-    inline __host__ __device__ const T & operator()(const IdxT d0) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const IdxT d0) const {
         return data_[d0];
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 1 && !Const, int>::type = 0>
-    inline __host__ __device__ T & operator()(const IdxT d0) {
+    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const IdxT d0) {
         return data_[d0];
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-    inline __host__ __device__ const T & operator()(const IdxT d0, const IdxT d1) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const IdxT d0, const IdxT d1) const {
         return data_[internal::OffsetXD<IdxT,DimT,2>(internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(d0,d1)),
                 internal::IndexList<IdxT,1>(Eigen::Matrix<uint,1,1>(dimensions_[0])))];
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 2 && !Const, int>::type = 0>
-    inline __host__ __device__ T & operator()(const IdxT d0, const IdxT d1) {
+    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const IdxT d0, const IdxT d1) {
         return data_[internal::OffsetXD<IdxT,DimT,2>(internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(d0,d1)),
                 internal::IndexList<IdxT,1>(Eigen::Matrix<uint,1,1>(dimensions_[0])))];
     }
@@ -1496,7 +1502,7 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 2 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value && !Const, int>::type = 0>
-    inline __host__ __device__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
+    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
         return operator()(indices(0),indices(1));
     }
 
@@ -1504,18 +1510,18 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 2 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __host__ __device__ const T & operator()(const Eigen::MatrixBase<Derived> & indices) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const Eigen::MatrixBase<Derived> & indices) const {
         return operator()(indices(0),indices(1));
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
-    inline __host__ __device__ const T & operator()(const IdxT d0, const IdxT d1, const IdxT d2) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const IdxT d0, const IdxT d1, const IdxT d2) const {
         return data_[internal::OffsetXD<IdxT,DimT,3>(internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(d0,d1,d2)),
                 internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(dimensions_[0],dimensions_[1])))];
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 3 && !Const, int>::type = 0>
-    inline __host__ __device__ T & operator()(const IdxT d0, const IdxT d1, const IdxT d2) {
+    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const IdxT d0, const IdxT d1, const IdxT d2) {
         return data_[internal::OffsetXD<IdxT,DimT,3>(internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(d0,d1,d2)),
                 internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(dimensions_[0],dimensions_[1])))];
     }
@@ -1524,7 +1530,7 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 3 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value && !Const, int>::type = 0>
-    inline __host__ __device__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
+    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
         return operator()(indices(0),indices(1),indices(2));
     }
 
@@ -1532,18 +1538,18 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 3 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __host__ __device__ const T & operator()(const Eigen::MatrixBase<Derived> & indices) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const Eigen::MatrixBase<Derived> & indices) const {
         return operator()(indices(0),indices(1),indices(2));
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
-    inline __host__ __device__ const T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) const {
         return data_[internal::OffsetXD<IdxT,DimT,4>(internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(d0,d1,d2,d3)),
                 internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(dimensions_[0],dimensions_[1],dimensions_[2])))];
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 4 && !Const, int>::type = 0>
-    inline __host__ __device__ T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) {
+    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) {
         return data_[internal::OffsetXD<IdxT,DimT,4>(internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(d0,d1,d2,d3)),
                 internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(dimensions_[0],dimensions_[1],dimensions_[2])))];
     }
@@ -1552,7 +1558,7 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 4 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value && !Const, int>::type = 0>
-    inline __host__ __device__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
+    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
         return operator()(indices(0),indices(1),indices(2),indices(3));
     }
 
@@ -1560,18 +1566,18 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 4 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __host__ __device__ const T & operator()(const Eigen::MatrixBase<Derived> & indices) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const Eigen::MatrixBase<Derived> & indices) const {
         return operator()(indices(0),indices(1),indices(2),indices(3));
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 5, int>::type = 0>
-    inline __host__ __device__ const T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3, const IdxT d4) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3, const IdxT d4) const {
         return data_[internal::OffsetXD<IdxT,DimT,5>(internal::IndexList<IdxT,5>(Eigen::Matrix<uint,5,1>(d0,d1,d2,d3,d4)),
                 internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(dimensions_[0],dimensions_[1],dimensions_[2],dimensions_[3])))];
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 5 && !Const, int>::type = 0>
-    inline __host__ __device__ T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3, const IdxT d4) {
+    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3, const IdxT d4) {
         return data_[internal::OffsetXD<IdxT,DimT,5>(internal::IndexList<IdxT,5>(Eigen::Matrix<uint,5,1>(d0,d1,d2,d3,d4)),
                 internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(dimensions_[0],dimensions_[1],dimensions_[2],dimensions_[3])))];
     }
@@ -1580,7 +1586,7 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 5 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value && !Const, int>::type = 0>
-    inline __host__ __device__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
+    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
         return operator()(indices(0),indices(1),indices(2),indices(3),indices(4));
     }
 
@@ -1588,7 +1594,7 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 5 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __host__ __device__ const T & operator()(const Eigen::MatrixBase<Derived> & indices) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const Eigen::MatrixBase<Derived> & indices) const {
         return operator()(indices(0),indices(1),indices(2),indices(3),indices(4));
     }
 
@@ -1596,7 +1602,7 @@ public:
 
 
     template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-    inline __host__ __device__ DimT offset(const IdxT d0, const IdxT d1) const {
+    inline __NDT_CUDA_HD_PREFIX__ DimT offset(const IdxT d0, const IdxT d1) const {
         return internal::OffsetXD<IdxT,DimT,2>(internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(d0,d1)),
                                                internal::IndexList<IdxT,1>(Eigen::Matrix<uint,1,1>(dimensions_[0])));
     }
@@ -1605,12 +1611,12 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 2 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __host__ __device__ DimT offset(const Eigen::MatrixBase<Derived> & indices) const {
+    inline __NDT_CUDA_HD_PREFIX__ DimT offset(const Eigen::MatrixBase<Derived> & indices) const {
         return offset(indices(0),indices(1));
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
-    inline __host__ __device__ DimT offset(const IdxT d0, const IdxT d1, const IdxT d2) const {
+    inline __NDT_CUDA_HD_PREFIX__ DimT offset(const IdxT d0, const IdxT d1, const IdxT d2) const {
         return internal::OffsetXD<IdxT,DimT,3>(internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(d0,d1,d2)),
                                                internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(dimensions_[0],dimensions_[1])));
     }
@@ -1619,12 +1625,12 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 3 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __host__ __device__ DimT offset(const Eigen::MatrixBase<Derived> & indices) const {
+    inline __NDT_CUDA_HD_PREFIX__ DimT offset(const Eigen::MatrixBase<Derived> & indices) const {
         return offset(indices(0),indices(1),indices(2));
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
-    inline __host__ __device__ DimT offset(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) const {
+    inline __NDT_CUDA_HD_PREFIX__ DimT offset(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) const {
         return internal::OffsetXD<IdxT,DimT,4>(internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(d0,d1,d2,d3)),
                                                internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(dimensions_[0],dimensions_[1],dimensions_[2])));
     }
@@ -1633,38 +1639,38 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 4 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __host__ __device__ DimT offset(const Eigen::MatrixBase<Derived> & indices) const {
+    inline __NDT_CUDA_HD_PREFIX__ DimT offset(const Eigen::MatrixBase<Derived> & indices) const {
         return offset(indices(0),indices(1),indices(2),indices(3));
     }
 
     // -=-=-=-=-=-=- interpolation functions -=-=-=-=-=-=-
 //    template <typename IdxT1,
 //              int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
-//    inline __host__ __device__ T interpolate(const IdxT1 v0) const {
+//    inline __NDT_CUDA_HD_PREFIX__ T interpolate(const IdxT1 v0) const {
 //        return internal::interpolate(data_, dimensions_, v0);
 //    }
 
 //    template <typename IdxT1, typename IdxT2,
 //              int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-//    inline __host__ __device__ T interpolate(const IdxT1 v0, const IdxT2 v1) const {
+//    inline __NDT_CUDA_HD_PREFIX__ T interpolate(const IdxT1 v0, const IdxT2 v1) const {
 //        return internal::interpolate(data_, dimensions_, v1, v0);
 //    }
 
 //    template <typename IdxT1, typename IdxT2, typename IdxT3,
 //              int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
-//    inline __host__ __device__ T interpolate(const IdxT1 v0, const IdxT2 v1, const IdxT3 v2) const {
+//    inline __NDT_CUDA_HD_PREFIX__ T interpolate(const IdxT1 v0, const IdxT2 v1, const IdxT3 v2) const {
 //        return internal::interpolate(data_, dimensions_, v2, v1, v0);
 //    }
 
 //    template <typename IdxT1, typename IdxT2, typename IdxT3, typename IdxT4,
 //              int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
-//    inline __host__ __device__ T interpolate(const IdxT1 v0, const IdxT2 v1, const IdxT3 v2, const IdxT4 v3) const {
+//    inline __NDT_CUDA_HD_PREFIX__ T interpolate(const IdxT1 v0, const IdxT2 v1, const IdxT3 v2, const IdxT4 v3) const {
 //        return internal::interpolate(data_, dimensions_, v3, v2, v1, v0);
 //    }
 
     template <typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
-    inline __host__ __device__ T Interpolate(const IdxTs ... vs) const {
+    inline __NDT_CUDA_HD_PREFIX__ T Interpolate(const IdxTs ... vs) const {
         return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
                                      internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
     }
@@ -1672,14 +1678,14 @@ public:
     template <typename Derived,
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-    inline __host__ __device__ T Interpolate(const Eigen::MatrixBase<Derived> & v) const {
+    inline __NDT_CUDA_HD_PREFIX__ T Interpolate(const Eigen::MatrixBase<Derived> & v) const {
         return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
                                      VectorToTuple(v.reverse()));
     }
 
     template <typename ValidityCheck, typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
-    inline __host__ __device__ T InterpolateValidOnly(ValidityCheck check, IdxTs ... vs) const {
+    inline __NDT_CUDA_HD_PREFIX__ T InterpolateValidOnly(ValidityCheck check, IdxTs ... vs) const {
 
         return internal::InterpolateValidOnly(data_,internal::IndexList<DimT,D>(dimensions_.reverse()),
                                               check, internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
@@ -1689,21 +1695,21 @@ public:
     template <typename ValidityCheck, typename Derived,
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-    inline __host__ __device__ T InterpolateValidOnly(ValidityCheck check, const Eigen::MatrixBase<Derived> & v) const {
+    inline __NDT_CUDA_HD_PREFIX__ T InterpolateValidOnly(ValidityCheck check, const Eigen::MatrixBase<Derived> & v) const {
         return internal::InterpolateValidOnly(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
                                               check,VectorToTuple(v.reverse()));
     }
 
     template <typename Transformer, typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
-    inline __host__ __device__ typename Transformer::ReturnType TransformInterpolate(Transformer transformer, const IdxTs ... vs) const {
+    inline __NDT_CUDA_HD_PREFIX__ typename Transformer::ReturnType TransformInterpolate(Transformer transformer, const IdxTs ... vs) const /*- > decltype(Transformer::operator())*/ {
         return internal::TransformInterpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()), transformer,
                                               internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
     }
 
     template <typename Transformer, typename ValidityCheck, typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
-    inline __host__ __device__ typename Transformer::ReturnType TransformInterpolateValidOnly(Transformer transformer, ValidityCheck check, IdxTs ... vs) const {
+    inline __NDT_CUDA_HD_PREFIX__ typename Transformer::ReturnType TransformInterpolateValidOnly(Transformer transformer, ValidityCheck check, IdxTs ... vs) const {
 
         return internal::TransformInterpolateValidOnly(data_,internal::IndexList<DimT,D>(dimensions_.reverse()),
                                                        transformer, check,
@@ -1713,19 +1719,19 @@ public:
 
     template <typename ValidityCheck, typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
-    inline __host__ __device__ bool validForInterpolation(ValidityCheck check, const IdxTs ... vs) {
+    inline __NDT_CUDA_HD_PREFIX__ bool validForInterpolation(ValidityCheck check, const IdxTs ... vs) {
         return internal::validForInterpolation(data_, internal::IndexList<DimT,D>(dimensions_.reverse()), check,
                                                internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
     }
 
     // -=-=-=-=-=-=- bounds-checking functions -=-=-=-=-=-=-
 //    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
-//    inline __host__ __device__ bool InBounds(const PosT d0, const BorderT border) const {
+//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const PosT d0, const BorderT border) const {
 //        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border);
 //    }
 
 //    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-//    inline __host__ __device__ bool InBounds(const PosT d0, const PosT d1, const BorderT border) const {
+//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const PosT d0, const PosT d1, const BorderT border) const {
 //        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
 //               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border);
 //    }
@@ -1734,12 +1740,12 @@ public:
 //              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 2 &&
 //                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
 //                                      std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-//    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
+//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
 //        return InBounds(point(0),point(1),border);
 //    }
 
 //    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
-//    inline __host__ __device__ bool InBounds(const PosT d0, const PosT d1, const PosT d2, const BorderT border) const {
+//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const PosT d0, const PosT d1, const PosT d2, const BorderT border) const {
 //        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
 //               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border) &&
 //               (d2 >= border) && (d2 <= DimensionSize(2) - 1 - border);
@@ -1749,12 +1755,12 @@ public:
 //              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 3 &&
 //                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
 //                                      std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-//    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
+//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
 //        return InBounds(point(0),point(1),point(2),border);
 //    }
 
 //    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
-//    inline __host__ __device__ bool InBounds(const PosT d0, const PosT d1, const PosT d2, const PosT d3, const BorderT border) const {
+//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const PosT d0, const PosT d1, const PosT d2, const PosT d3, const BorderT border) const {
 //        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
 //               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border) &&
 //               (d2 >= border) && (d2 <= DimensionSize(2) - 1 - border) &&
@@ -1765,20 +1771,20 @@ public:
 //              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 4 &&
 //                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
 //                                      std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-//    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
+//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
 //        return InBounds(point(0),point(1),point(2),point(3),border);
 //    }
 
     template <typename PosHead, typename ... PosTail,
               typename std::enable_if<sizeof...(PosTail) == (D-1) && std::is_fundamental<PosHead>::value, int>::type = 0>
-    inline __host__ __device__ bool InBounds(PosHead head, PosTail... tail) const {
+    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(PosHead head, PosTail... tail) const {
         return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),
                                      std::tuple<PosHead,PosTail...>(head,tail...), 0, 0);
     }
 
     template <typename ... PosTs,
               typename std::enable_if<sizeof...(PosTs) == (D+1), int>::type = 0>
-    inline __host__ __device__ bool InBounds(PosTs... pos) const {
+    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(PosTs... pos) const {
         const std::tuple<PosTs...> posTuple(pos...);
         const auto border = std::get<sizeof...(PosTs)-1>(posTuple);
         return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),
@@ -1789,21 +1795,21 @@ public:
     template <typename BorderT, typename Derived,
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & pos, BorderT border) const {
+    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const Eigen::MatrixBase<Derived> & pos, BorderT border) const {
         return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),VectorToTuple(pos),border,border);
     }
 
     template <typename Derived,
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-    inline __host__ __device__ bool InBounds(const Eigen::MatrixBase<Derived> & pos) const {
+    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const Eigen::MatrixBase<Derived> & pos) const {
         return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),VectorToTuple(pos),0,0);
     }
 
 #define __NDT_TENSOR_DIFFERENCE_BOUNDS_DEFINITION__(DiffType) \
     template <typename PosHead, typename ... PosTail, \
               typename std::enable_if<sizeof...(PosTail) == (D-1) && std::is_fundamental<PosHead>::value, int>::type = 0> \
-    inline __host__ __device__ bool In##DiffType##DifferenceBounds(PosHead head, PosTail... tail) const { \
+    inline __NDT_CUDA_HD_PREFIX__ bool In##DiffType##DifferenceBounds(PosHead head, PosTail... tail) const { \
         return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_), \
                                      std::tuple<PosHead,PosTail...>(head,tail...), \
                                      internal::DifferenceTypeTraits<internal::DiffType##Difference>::borderLow, \
@@ -1813,7 +1819,7 @@ public:
     template <typename Derived, \
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D && \
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0> \
-    inline __host__ __device__ bool In##DiffType##DifferenceBounds(const Eigen::MatrixBase<Derived> & pos) const { \
+    inline __NDT_CUDA_HD_PREFIX__ bool In##DiffType##DifferenceBounds(const Eigen::MatrixBase<Derived> & pos) const { \
         return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),VectorToTuple(pos), \
                                      internal::DifferenceTypeTraits<internal::DiffType##Difference>::borderLow, \
                                      internal::DifferenceTypeTraits<internal::DiffType##Difference>::borderHigh); \
@@ -1828,7 +1834,7 @@ public:
     template <typename Derived, \
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D && \
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0> \
-    inline __host__ __device__ typename internal::GradientComputer<T,D,internal::DiffType##Difference>::GradientType DiffType##Difference(const Eigen::MatrixBase<Derived> & v) const { \
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientComputer<T,D,internal::DiffType##Difference>::GradientType DiffType##Difference(const Eigen::MatrixBase<Derived> & v) const { \
         \
         return internal::GradientComputer<T,D,internal::DiffType##Difference>::compute(data_,dimensions_,VectorToTuple(v)); \
         \
@@ -1836,7 +1842,7 @@ public:
     \
     template <typename ... IdxTs, \
               typename std::enable_if<sizeof...(IdxTs) == D,int>::type = 0> \
-    inline __host__ __device__ typename internal::GradientComputer<T,D,internal::DiffType##Difference>::GradientType DiffType##Difference(const IdxTs ... v) const { \
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientComputer<T,D,internal::DiffType##Difference>::GradientType DiffType##Difference(const IdxTs ... v) const { \
         \
         return internal::GradientComputer<T,D,internal::DiffType##Difference>::template compute<IdxTs...>(data_,dimensions_,std::tuple<IdxTs...>(v...)); \
         \
@@ -1846,7 +1852,7 @@ public:
               typename Derived, \
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D && \
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0> \
-    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::GradientType Transform##DiffType##Difference(Transformer transformer, const Eigen::MatrixBase<Derived> & v) const { \
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::GradientType Transform##DiffType##Difference(Transformer transformer, const Eigen::MatrixBase<Derived> & v) const { \
         \
         return internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::TransformCompute(transformer,data_,dimensions_,VectorToTuple(v)); \
         \
@@ -1855,7 +1861,7 @@ public:
     template <typename Transformer, \
               typename ... IdxTs, \
               typename std::enable_if<sizeof...(IdxTs) == D,int>::type = 0> \
-    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::GradientType Transform##DiffType##Difference(Transformer transformer, const IdxTs ... v) const { \
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::GradientType Transform##DiffType##Difference(Transformer transformer, const IdxTs ... v) const { \
         \
         return internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::template TransformCompute<Transformer,IdxTs...>(transformer,data_,dimensions_,std::tuple<IdxTs...>(v...)); \
         \
@@ -1866,7 +1872,7 @@ public:
               typename Derived, \
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D && \
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0> \
-    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::GradientType Transform##DiffType##DifferenceValidOnly(Transformer transformer, ValidityCheck check, const Eigen::MatrixBase<Derived> & v) const { \
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::GradientType Transform##DiffType##DifferenceValidOnly(Transformer transformer, ValidityCheck check, const Eigen::MatrixBase<Derived> & v) const { \
         \
         return internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::TransformComputeValidOnly(transformer,check,data_,dimensions_,VectorToTuple(v)); \
         \
@@ -1876,7 +1882,7 @@ public:
               typename ValidityCheck, \
               typename ... IdxTs, \
               typename std::enable_if<sizeof...(IdxTs) == D,int>::type = 0> \
-    inline __host__ __device__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::GradientType Transform##DiffType##DifferenceValidOnly(Transformer transformer, ValidityCheck check, const IdxTs ... v) const { \
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::GradientType Transform##DiffType##DifferenceValidOnly(Transformer transformer, ValidityCheck check, const IdxTs ... v) const { \
         \
         return internal::GradientComputer<typename Transformer::ReturnType,D,internal::DiffType##Difference>::template TransformComputeValidOnly<Transformer,ValidityCheck,IdxTs...>(transformer,check,data_,dimensions_,std::tuple<IdxTs...>(v...)); \
         \
@@ -1889,7 +1895,7 @@ public:
     // -=-=-=-=-=-=- pointer manipulation functions -=-=-=-=-=-=-
     template <typename U = T,
               typename std::enable_if<!Const && sizeof(U), int>::type = 0>
-    inline __host__ __device__ void SetDataPointer(T * data) { data_ = data; }
+    inline __NDT_CUDA_HD_PREFIX__ void SetDataPointer(T * data) { data_ = data; }
 
     // -=-=-=-=-=-=- copying functions -=-=-=-=-=-=-
     template <Residency R2, bool Const2, bool Check=false>
@@ -2007,13 +2013,13 @@ private:
 //    typedef internal::DimT DimT;
 //    typedef unsigned int IndT;
 
-//    inline __host__ __device__ DimT dimensionSize(const IndT dim) const {
+//    inline __NDT_CUDA_HD_PREFIX__ DimT dimensionSize(const IndT dim) const {
 //        assert(dim < D);
 //        return dimensions_[dim];
 //    }
 
 //    template <unsigned int FirstDimension, unsigned int ... Rest>
-//    inline __host__ __device__ Tensor<D,T,R,Const,internal::SliceReturnValPacked<Packed,FirstDimension>::Packed> slice() {
+//    inline __NDT_CUDA_HD_PREFIX__ Tensor<D,T,R,Const,internal::SliceReturnValPacked<Packed,FirstDimension>::Packed> slice() {
 
 //    }
 
@@ -2103,3 +2109,5 @@ __NDT_DIMENSIONAL_ALIAS__(3,Volume);
 
 
 } // namespace NDT
+
+#undef __NDT_CUDA_HD_PREFIX__

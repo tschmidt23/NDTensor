@@ -2,7 +2,13 @@
 
 #include <tuple>
 
+#ifdef __CUDACC__
 #include <cuda_runtime.h>
+#define __NDT_CUDA_HD_PREFIX__ __host__ __device__
+#else
+#define __NDT_CUDA_HD_PREFIX__
+#endif // __CUDACC__
+
 
 #include <Eigen/Core>
 
@@ -29,19 +35,19 @@ struct IntegerList<Min,Min> {
 };
 
 template <int...Indices, typename Tuple>
-__host__ __device__ inline auto TupleSubset(const Tuple & tuple, IntegerListConstructor<Indices...>)
+__NDT_CUDA_HD_PREFIX__ inline auto TupleSubset(const Tuple & tuple, IntegerListConstructor<Indices...>)
     -> decltype(std::make_tuple(std::get<Indices>(tuple)...)) {
     return std::make_tuple(std::get<Indices>(tuple)...);
 }
 
 template <typename Head>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline std::tuple<> GetTail(const std::tuple<Head> & /*t*/) {
     return std::tuple<>();
 }
 
 template <typename Head, typename ... Tail>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline std::tuple<Tail...> GetTail(const std::tuple<Head,Tail...> & t) {
 
     return TupleSubset(t, typename IntegerList<1,sizeof...(Tail)>::Type());
@@ -49,13 +55,13 @@ inline std::tuple<Tail...> GetTail(const std::tuple<Head,Tail...> & t) {
 }
 
 template <typename Tail>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline std::tuple<> GetHead(const std::tuple<Tail> & /*t*/) {
     return std::tuple<>();
 }
 
 template <typename ... Head, typename Tail>
-__host__ __device__
+__NDT_CUDA_HD_PREFIX__
 inline std::tuple<Head...> GetHead(const std::tuple<Head...,Tail> & t) {
 
     return TupleSubset(t, typename IntegerList<0,sizeof...(Head)-1>::Type());
@@ -69,7 +75,7 @@ template <typename T>
 struct TupleReverser<std::tuple<T> > {
     using Type = std::tuple<T>;
 
-    static __host__ __device__ inline Type Reverse(const std::tuple<T> & t) {
+    static __NDT_CUDA_HD_PREFIX__ inline Type Reverse(const std::tuple<T> & t) {
         return t;
     }
 
@@ -83,7 +89,7 @@ struct TupleReverser<std::tuple<Head,Tail...> > {
 
     using Type = decltype(std::tuple_cat(std::declval<TailTuple>(), std::declval<HeadTuple>()));
 
-    static __host__ __device__ inline Type Reverse(const std::tuple<Head,Tail...> & t) {
+    static __NDT_CUDA_HD_PREFIX__ inline Type Reverse(const std::tuple<Head,Tail...> & t) {
 
         return std::tuple_cat(TupleReverser<std::tuple<Tail...> >::Reverse(GetTail(t)), std::tuple<Head>(std::get<0>(t)));
 
@@ -111,7 +117,7 @@ struct TupleIndexHunter<QueryType,CheckIndex,QueryType,TupleTypes...> {
 template <std::size_t Index, typename ... TupleTypes>
 struct DeviceExecutableTupleCopy {
 
-    static inline __host__ __device__ void Copy(std::tuple<TupleTypes...> & destination,
+    static inline __NDT_CUDA_HD_PREFIX__ void Copy(std::tuple<TupleTypes...> & destination,
                                                 const std::tuple<TupleTypes...> & source) {
         std::get<Index>(destination) = std::get<Index>(source);
         DeviceExecutableTupleCopy<Index-1,TupleTypes...>::Copy(destination,source);
@@ -122,7 +128,7 @@ struct DeviceExecutableTupleCopy {
 template <typename ... TupleTypes>
 struct DeviceExecutableTupleCopy<std::numeric_limits<std::size_t>::max(),TupleTypes...> {
 
-    static inline __host__ __device__ void Copy(std::tuple<TupleTypes...> & /*destination*/,
+    static inline __NDT_CUDA_HD_PREFIX__ void Copy(std::tuple<TupleTypes...> & /*destination*/,
                                                 const std::tuple<TupleTypes...> & /*source*/) {
 //        std::get<0>(destination) = std::get<0>(source);
     }
@@ -150,7 +156,7 @@ struct TupledType<Scalar, 1> {
 } // namespace internal
 
 template <typename QueryType, typename ... TupleTypes>
-__host__ __device__ inline
+__NDT_CUDA_HD_PREFIX__ inline
 QueryType & GetByType(std::tuple<TupleTypes...> & tuple) {
 
     return std::get<internal::TupleIndexHunter<QueryType,0,TupleTypes ...>::Index>(tuple);
@@ -158,7 +164,7 @@ QueryType & GetByType(std::tuple<TupleTypes...> & tuple) {
 }
 
 template <typename QueryType, typename ... TupleTypes>
-__host__ __device__ inline
+__NDT_CUDA_HD_PREFIX__ inline
 const QueryType & GetByType(const std::tuple<TupleTypes...> & tuple) {
 
     return std::get<internal::TupleIndexHunter<QueryType,0,TupleTypes ...>::Index>(tuple);
@@ -166,7 +172,7 @@ const QueryType & GetByType(const std::tuple<TupleTypes...> & tuple) {
 }
 
 template <typename ... TupleTypes>
-__host__ __device__ inline
+__NDT_CUDA_HD_PREFIX__ inline
 void Copy(std::tuple<TupleTypes...> & destination, const std::tuple<TupleTypes...> & source) {
     internal::DeviceExecutableTupleCopy<sizeof...(TupleTypes)-1,TupleTypes...>::Copy(destination,source);
 }
@@ -175,7 +181,7 @@ void Copy(std::tuple<TupleTypes...> & destination, const std::tuple<TupleTypes..
 template <typename Derived,
           typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 1 &&
                                   Eigen::internal::traits<Derived>::ColsAtCompileTime == 1,int>::type = 0>
-__host__ __device__ inline
+__NDT_CUDA_HD_PREFIX__ inline
 typename internal::TupledType<typename Eigen::internal::traits<Derived>::Scalar,Eigen::internal::traits<Derived>::RowsAtCompileTime>::Type
 VectorToTuple(const Eigen::MatrixBase<Derived> & vector) {
 
@@ -186,7 +192,7 @@ VectorToTuple(const Eigen::MatrixBase<Derived> & vector) {
 template <typename Derived,
           typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime >= 2 &&
                                   Eigen::internal::traits<Derived>::ColsAtCompileTime == 1,int>::type = 0>
-__host__ __device__ inline
+__NDT_CUDA_HD_PREFIX__ inline
 typename internal::TupledType<typename Eigen::internal::traits<Derived>::Scalar,Eigen::internal::traits<Derived>::RowsAtCompileTime>::Type
 VectorToTuple(const Eigen::MatrixBase<Derived> & vector) {
 
@@ -196,3 +202,5 @@ VectorToTuple(const Eigen::MatrixBase<Derived> & vector) {
 }
 
 } // namespace NDT
+
+#undef __NDT_CUDA_HD_PREFIX__
