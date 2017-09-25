@@ -1397,6 +1397,7 @@ public:
 
     typedef unsigned int DimT;
     typedef unsigned int IdxT;
+    typedef T DataT;
 
     template <int D2 = D, typename std::enable_if<D2 == 1,int>::type = 0>
     __NDT_CUDA_HD_PREFIX__ Tensor(const DimT length) : dimensions_(Eigen::Matrix<DimT,D,1>(length)), data_(nullptr) { }
