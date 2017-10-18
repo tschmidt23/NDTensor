@@ -182,26 +182,6 @@ struct IndexList {
 
 };
 
-//template <typename T>
-//struct IndexList<T,1> {
-//    T head;
-
-//    __NDT_CUDA_HD_PREFIX__
-//    inline IndexList(const Eigen::Matrix<T,1,1> & indices)
-//        : head(indices(0)) { }
-
-//    __NDT_CUDA_HD_PREFIX__
-//    inline T sum() const {
-//        return head;
-//    }
-
-//    __NDT_CUDA_HD_PREFIX__
-//    inline T product() const {
-//        return head;
-//    }
-
-//};
-
 template <typename T>
 struct IndexList<T,0> {
 
@@ -253,124 +233,6 @@ inline __NDT_CUDA_HD_PREFIX__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIn
     return dimIndices.head;
 
 }
-
-
-
-//template <typename IdxT, typename DimT>
-//inline __NDT_CUDA_HD_PREFIX__ std::size_t offsetXD(const IndexList<IdxT,2> dimIndices, const IndexList<DimT,1> dimSizes) {
-
-//    return dimIndices.head + dimSizes.head*dimIndices.tail.head;
-
-//}
-
-
-
-
-
-// -=-=-=- interpolation -=-=-=-
-
-//template <typename Scalar, typename ... IdxTs>
-//struct Interpolator2;
-
-//template <typename Scalar, typename ... IdxTs>
-//struct Interpolator2<Scalar, float, IdxTs...> {
-
-//    static constexpr uint Length = sizeof...(IdxTs) + 1;
-
-//    __NDT_CUDA_HD_PREFIX__
-//    static inline Scalar interpolate(const Scalar * data,
-//                                     const Eigen::Matrix<uint,Length,1> dimensions,
-//                                     float firstIndex, IdxTs ... remainingIndices) {
-
-//        const uint i = firstIndex;
-//        const float t = firstIndex - i;
-
-//        return (1-t)*Interpolator2<Scalar, IdxTs...>::interpolate(data + i*dimensions.template head<Length-1>().prod(),
-//                                                                  dimensions.template head<Length-1>(),
-//                                                                  remainingIndices...)
-//               + t * Interpolator2<Scalar, IdxTs...>::interpolate(data + (i+1)*dimensions.template head<Length-1>().prod(),
-//                                                                  dimensions.template head<Length-1>(),
-//                                                                  remainingIndices...);
-
-//    }
-
-//};
-
-//template <typename Scalar, typename ... IdxTs>
-//struct Interpolator2<Scalar, int, IdxTs...> {
-
-//    static constexpr uint Length = sizeof...(IdxTs) + 1;
-
-//    __NDT_CUDA_HD_PREFIX__
-//    static inline Scalar interpolate(const Scalar * data,
-//                                     const Eigen::Matrix<uint,Length,1> dimensions,
-//                                     int firstIndex, IdxTs ... remainingIndices) {
-
-//        return Interpolator2<Scalar, IdxTs...>::interpolate(data + firstIndex*dimensions.template head<Length-1>().prod(),
-//                                                            dimensions.template head<Length-1>(),
-//                                                            remainingIndices...);
-
-//    }
-
-//};
-
-//template <typename Scalar>
-//struct Interpolator2<Scalar> {
-
-//    static constexpr uint Length = 0;
-
-//    __NDT_CUDA_HD_PREFIX__
-//    static inline Scalar interpolate(const Scalar * data,
-//                                     const Eigen::Matrix<uint,Length,1> dimensions) {
-
-//        return *data;
-
-//    }
-
-//};
-
-//template <typename Scalar>
-//__NDT_CUDA_HD_PREFIX__
-//inline Scalar interpolate(const Scalar * data,
-//                          const Eigen::Matrix<uint,0,1> dimensions) {
-
-//    return *data;
-
-//}
-
-//template <typename Scalar, typename ... IdxTs>
-//__NDT_CUDA_HD_PREFIX__
-//inline Scalar interpolate(const Scalar * data,
-//                          const Eigen::Matrix<uint,sizeof...(IdxTs)+1,1> dimensions,
-//                          float firstIndex, IdxTs ... remainingIndices) {
-
-//    static constexpr uint Length = sizeof...(IdxTs) + 1;
-
-//    const uint i = firstIndex;
-//    const float t = firstIndex - i;
-
-//    return (1-t)*interpolate(data + i*dimensions.template head<Length-1>().prod(),
-//                             dimensions.template head<Length-1>(),
-//                             remainingIndices...)
-//           + t * interpolate(data + (i+1)*dimensions.template head<Length-1>().prod(),
-//                             dimensions.template head<Length-1>(),
-//                             remainingIndices...);
-
-//}
-
-//template <typename Scalar, typename ... IdxTs>
-//__NDT_CUDA_HD_PREFIX__
-//inline Scalar interpolate(const Scalar * data,
-//                          const Eigen::Matrix<uint,sizeof...(IdxTs) + 1,1> dimensions,
-//                          int firstIndex, IdxTs ... remainingIndices) {
-
-//    static constexpr uint Length = sizeof...(IdxTs) + 1;
-
-//    return interpolate(data + firstIndex*dimensions.template head<Length-1>().prod(),
-//                       dimensions.template head<Length-1>(),
-//                       remainingIndices...);
-
-//}
 
 template <typename BorderT>
 __NDT_CUDA_HD_PREFIX__
@@ -1350,6 +1212,30 @@ struct DifferenceTypeTraits<ForwardDifference> {
     static constexpr int borderHigh = 1;
 };
 
+template <uint D>
+struct StrideConstructor {
+
+    static inline Eigen::Matrix<uint,D,1,Eigen::DontAlign>
+    Construct(const uint soFar, const Eigen::Matrix<uint,D,1,Eigen::DontAlign> & dimensions) {
+
+        return (Eigen::Matrix<uint,D,1,Eigen::DontAlign>() << soFar, StrideConstructor<D-1>::Construct(soFar * dimensions(0), dimensions.template tail<D-1>())).finished();
+
+    }
+
+};
+
+template <>
+struct StrideConstructor<1> {
+
+    static inline Eigen::Matrix<uint,1,1,Eigen::DontAlign>
+    Construct(const uint soFar, const Eigen::Matrix<uint,1,1,Eigen::DontAlign> & /*dimensions*/) {
+
+        return Eigen::Matrix<uint,1,1,Eigen::DontAlign>(soFar);
+
+    }
+
+};
+
 template <typename ... IdxTs>
 struct IndexTypePrinter {
 
@@ -1475,6 +1361,10 @@ public:
     inline __NDT_CUDA_HD_PREFIX__ std::size_t SizeBytes() const {
         return Count() * sizeof(T);
     }
+
+    inline __NDT_CUDA_HD_PREFIX__ Eigen::Matrix<DimT,D,1,Eigen::DontAlign> Strides() const {
+        return internal::StrideConstructor<D>::Construct(1, dimensions_);
+    };
 
     // -=-=-=-=-=-=- indexing functions -=-=-=-=-=-=-
     template <int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
