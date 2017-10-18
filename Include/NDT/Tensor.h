@@ -8,12 +8,7 @@
 
 #include <NDT/TupleHelpers.h>
 
-#ifndef __NDT_NO_CUDA__
-#include <cuda_runtime.h>
-#define __NDT_CUDA_HD_PREFIX__ __host__ __device__
-#else
-#define __NDT_CUDA_HD_PREFIX__
-#endif // __NDT_NO_CUDA__
+#include <NDT/TensorBase.h>
 
 namespace NDT {
 
@@ -1277,13 +1272,21 @@ class TypedResidentTensorBase : public TypedTensorBase<Scalar> {
 
 };
 
+template <uint D, typename T, Residency R, bool Const = false>
+class TensorView;
+
 template <uint D, typename T, Residency R = HostResident, bool Const = false>
-class Tensor : public TypedResidentTensorBase<T,R> {
+class Tensor
+        : public TensorBase<Tensor<D,T,R,Const> >,
+          public TypedResidentTensorBase<T,R> {
 public:
 
-    typedef unsigned int DimT;
-    typedef unsigned int IdxT;
-    typedef T DataT;
+    using BaseT = TensorBase<Tensor<D,T,R,Const> >;
+    using DimT = typename BaseT::DimT;
+    using IdxT = typename BaseT::IdxT;
+    using DataT = T;
+
+    friend BaseT;
 
     template <int D2 = D, typename std::enable_if<D2 == 1,int>::type = 0>
     __NDT_CUDA_HD_PREFIX__ Tensor(const DimT length) : dimensions_(Eigen::Matrix<DimT,D,1>(length)), data_(nullptr) { }
@@ -1320,7 +1323,7 @@ public:
     // conversion to const tensor
     template <bool _Const = Const, typename std::enable_if<!_Const,int>::type = 0>
     inline operator Tensor<D,T,R,true>() const {
-        return Tensor<D,T,R,true>( Dimensions(), Data() );
+        return Tensor<D,T,R,true>( this->Dimensions(), Data() );
     }
 
     template <typename U = T,
@@ -1330,14 +1333,16 @@ public:
     inline __NDT_CUDA_HD_PREFIX__ const T * Data() const { return data_; }
 
     // -=-=-=-=-=-=- sizing functions -=-=-=-=-=-=-
-    inline __NDT_CUDA_HD_PREFIX__ DimT DimensionSize(const IdxT dim) const {
+private:
+    inline __NDT_CUDA_HD_PREFIX__ DimT DimensionSizeImpl(const IdxT dim) const {
         return dimensions_(dim);
     }
 
-    inline __NDT_CUDA_HD_PREFIX__ const Eigen::Matrix<DimT,D,1,Eigen::DontAlign> & Dimensions() const {
+    inline __NDT_CUDA_HD_PREFIX__ const Eigen::Matrix<DimT,D,1,Eigen::DontAlign> & DimensionsImpl() const {
         return dimensions_;
     }
 
+public:
     template <int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ DimT Length() const {
         return dimensions_(0);
@@ -1364,27 +1369,72 @@ public:
 
     inline __NDT_CUDA_HD_PREFIX__ Eigen::Matrix<DimT,D,1,Eigen::DontAlign> Strides() const {
         return internal::StrideConstructor<D>::Construct(1, dimensions_);
-    };
+    }
+
+    // -=-=-=-=-=-=- slicing functions -=-=-=-=-=-=-
+    template <int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
+    inline TensorView<D, T, R, Const> Slice(const IdxT start0, const DimT size0) {
+        return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>(size0, data_ + start0), Strides());
+    }
+
+    template <int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
+    inline TensorView<D, T, R, true> Slice(const IdxT start0, const DimT size0) const {
+        return TensorView<D, T, R, true>(Tensor<D, T, R, true>(size0, data_ + start0), Strides());
+    }
+
+    template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
+    inline TensorView<D, T, R, Const> Slice(const IdxT start0, const IdxT start1, const DimT size0, const DimT size1) {
+        return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>({size0, size1}, &(*this)(start0, start1)), Strides());
+    }
+
+    template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
+    inline TensorView<D, T, R, true> Slice(const IdxT start0, const IdxT start1, const DimT size0, const DimT size1) const {
+        return TensorView<D, T, R, true>(Tensor<D, T, R, true>({size0, size1}, &(*this)(start0, start1)), Strides());
+    }
+
+    template <int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
+    inline TensorView<D, T, R, Const> Slice(const IdxT start0, const IdxT start1, const IdxT start2,
+                                            const DimT size0,  const DimT size1,  const DimT size2) {
+        return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>({size0, size1, size2}, &(*this)(start0, start1, start2)), Strides());
+    }
+
+    template <int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
+    inline TensorView<D, T, R, true> Slice(const IdxT start0, const IdxT start1, const IdxT start2,
+                                           const DimT size0,  const DimT size1,  const DimT size2) const {
+        return TensorView<D, T, R, true>(Tensor<D, T, R, true>({size0, size1, size2}, &(*this)(start0, start1, start2)), Strides());
+    }
+
+    template <int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
+    inline TensorView<D, T, R, Const> Slice(const IdxT start0, const IdxT start1, const IdxT start2, const IdxT start3,
+                                            const DimT size0,  const DimT size1,  const DimT size2,  const DimT size3) {
+        return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>({size0, size1, size2, size3}, &(*this)(start0, start1, start2, start3)), Strides());
+    }
+
+    template <int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
+    inline TensorView<D, T, R, true> Slice(const IdxT start0, const IdxT start1, const IdxT start2, const IdxT start3,
+                                           const DimT size0,  const DimT size1,  const DimT size2,  const DimT size3) const {
+        return TensorView<D, T, R, true>(Tensor<D, T, R, true>({size0, size1, size2, size3}, &(*this)(start0, start1, start2, start3)), Strides());
+    }
 
     // -=-=-=-=-=-=- indexing functions -=-=-=-=-=-=-
     template <int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const IdxT d0) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & Element(const IdxT d0) const {
         return data_[d0];
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 1 && !Const, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const IdxT d0) {
+    inline __NDT_CUDA_HD_PREFIX__ T & Element(const IdxT d0) {
         return data_[d0];
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const IdxT d0, const IdxT d1) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & Element(const IdxT d0, const IdxT d1) const {
         return data_[internal::OffsetXD<IdxT,DimT,2>(internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(d0,d1)),
                 internal::IndexList<IdxT,1>(Eigen::Matrix<uint,1,1>(dimensions_[0])))];
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 2 && !Const, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const IdxT d0, const IdxT d1) {
+    inline __NDT_CUDA_HD_PREFIX__ T & Element(const IdxT d0, const IdxT d1) {
         return data_[internal::OffsetXD<IdxT,DimT,2>(internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(d0,d1)),
                 internal::IndexList<IdxT,1>(Eigen::Matrix<uint,1,1>(dimensions_[0])))];
     }
@@ -1393,7 +1443,7 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 2 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value && !Const, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
+    inline __NDT_CUDA_HD_PREFIX__ T & Element(const Eigen::MatrixBase<Derived> & indices) {
         return operator()(indices(0),indices(1));
     }
 
@@ -1401,18 +1451,18 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 2 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const Eigen::MatrixBase<Derived> & indices) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & Element(const Eigen::MatrixBase<Derived> & indices) const {
         return operator()(indices(0),indices(1));
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const IdxT d0, const IdxT d1, const IdxT d2) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & Element(const IdxT d0, const IdxT d1, const IdxT d2) const {
         return data_[internal::OffsetXD<IdxT,DimT,3>(internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(d0,d1,d2)),
                 internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(dimensions_[0],dimensions_[1])))];
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 3 && !Const, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const IdxT d0, const IdxT d1, const IdxT d2) {
+    inline __NDT_CUDA_HD_PREFIX__ T & Element(const IdxT d0, const IdxT d1, const IdxT d2) {
         return data_[internal::OffsetXD<IdxT,DimT,3>(internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(d0,d1,d2)),
                 internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(dimensions_[0],dimensions_[1])))];
     }
@@ -1421,7 +1471,7 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 3 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value && !Const, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
+    inline __NDT_CUDA_HD_PREFIX__ T & Element(const Eigen::MatrixBase<Derived> & indices) {
         return operator()(indices(0),indices(1),indices(2));
     }
 
@@ -1429,18 +1479,18 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 3 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const Eigen::MatrixBase<Derived> & indices) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & Element(const Eigen::MatrixBase<Derived> & indices) const {
         return operator()(indices(0),indices(1),indices(2));
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & Element(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) const {
         return data_[internal::OffsetXD<IdxT,DimT,4>(internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(d0,d1,d2,d3)),
                 internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(dimensions_[0],dimensions_[1],dimensions_[2])))];
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 4 && !Const, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) {
+    inline __NDT_CUDA_HD_PREFIX__ T & Element(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) {
         return data_[internal::OffsetXD<IdxT,DimT,4>(internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(d0,d1,d2,d3)),
                 internal::IndexList<IdxT,3>(Eigen::Matrix<uint,3,1>(dimensions_[0],dimensions_[1],dimensions_[2])))];
     }
@@ -1449,7 +1499,7 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 4 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value && !Const, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
+    inline __NDT_CUDA_HD_PREFIX__ T & Element(const Eigen::MatrixBase<Derived> & indices) {
         return operator()(indices(0),indices(1),indices(2),indices(3));
     }
 
@@ -1457,18 +1507,18 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 4 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const Eigen::MatrixBase<Derived> & indices) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & Element(const Eigen::MatrixBase<Derived> & indices) const {
         return operator()(indices(0),indices(1),indices(2),indices(3));
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 5, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3, const IdxT d4) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & Element(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3, const IdxT d4) const {
         return data_[internal::OffsetXD<IdxT,DimT,5>(internal::IndexList<IdxT,5>(Eigen::Matrix<uint,5,1>(d0,d1,d2,d3,d4)),
                 internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(dimensions_[0],dimensions_[1],dimensions_[2],dimensions_[3])))];
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 5 && !Const, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3, const IdxT d4) {
+    inline __NDT_CUDA_HD_PREFIX__ T & Element(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3, const IdxT d4) {
         return data_[internal::OffsetXD<IdxT,DimT,5>(internal::IndexList<IdxT,5>(Eigen::Matrix<uint,5,1>(d0,d1,d2,d3,d4)),
                 internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(dimensions_[0],dimensions_[1],dimensions_[2],dimensions_[3])))];
     }
@@ -1477,7 +1527,7 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 5 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value && !Const, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ T & operator()(const Eigen::MatrixBase<Derived> & indices) {
+    inline __NDT_CUDA_HD_PREFIX__ T & Element(const Eigen::MatrixBase<Derived> & indices) {
         return operator()(indices(0),indices(1),indices(2),indices(3),indices(4));
     }
 
@@ -1485,12 +1535,9 @@ public:
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 5 &&
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
                                       std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const Eigen::MatrixBase<Derived> & indices) const {
+    inline __NDT_CUDA_HD_PREFIX__ const T & Element(const Eigen::MatrixBase<Derived> & indices) const {
         return operator()(indices(0),indices(1),indices(2),indices(3),indices(4));
     }
-
-
-
 
     template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ DimT offset(const IdxT d0, const IdxT d1) const {
@@ -1535,29 +1582,6 @@ public:
     }
 
     // -=-=-=-=-=-=- interpolation functions -=-=-=-=-=-=-
-//    template <typename IdxT1,
-//              int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
-//    inline __NDT_CUDA_HD_PREFIX__ T interpolate(const IdxT1 v0) const {
-//        return internal::interpolate(data_, dimensions_, v0);
-//    }
-
-//    template <typename IdxT1, typename IdxT2,
-//              int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-//    inline __NDT_CUDA_HD_PREFIX__ T interpolate(const IdxT1 v0, const IdxT2 v1) const {
-//        return internal::interpolate(data_, dimensions_, v1, v0);
-//    }
-
-//    template <typename IdxT1, typename IdxT2, typename IdxT3,
-//              int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
-//    inline __NDT_CUDA_HD_PREFIX__ T interpolate(const IdxT1 v0, const IdxT2 v1, const IdxT3 v2) const {
-//        return internal::interpolate(data_, dimensions_, v2, v1, v0);
-//    }
-
-//    template <typename IdxT1, typename IdxT2, typename IdxT3, typename IdxT4,
-//              int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
-//    inline __NDT_CUDA_HD_PREFIX__ T interpolate(const IdxT1 v0, const IdxT2 v1, const IdxT3 v2, const IdxT4 v3) const {
-//        return internal::interpolate(data_, dimensions_, v3, v2, v1, v0);
-//    }
 
     template <typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
@@ -1616,56 +1640,6 @@ public:
     }
 
     // -=-=-=-=-=-=- bounds-checking functions -=-=-=-=-=-=-
-//    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
-//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const PosT d0, const BorderT border) const {
-//        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border);
-//    }
-
-//    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const PosT d0, const PosT d1, const BorderT border) const {
-//        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
-//               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border);
-//    }
-
-//    template <typename BorderT, typename Derived,
-//              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 2 &&
-//                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
-//                                      std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
-//        return InBounds(point(0),point(1),border);
-//    }
-
-//    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
-//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const PosT d0, const PosT d1, const PosT d2, const BorderT border) const {
-//        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
-//               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border) &&
-//               (d2 >= border) && (d2 <= DimensionSize(2) - 1 - border);
-//    }
-
-//    template <typename BorderT, typename Derived,
-//              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 3 &&
-//                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
-//                                      std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
-//        return InBounds(point(0),point(1),point(2),border);
-//    }
-
-//    template <typename PosT, typename BorderT, int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
-//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const PosT d0, const PosT d1, const PosT d2, const PosT d3, const BorderT border) const {
-//        return (d0 >= border) && (d0 <= DimensionSize(0) - 1 - border) &&
-//               (d1 >= border) && (d1 <= DimensionSize(1) - 1 - border) &&
-//               (d2 >= border) && (d2 <= DimensionSize(2) - 1 - border) &&
-//               (d3 >= border) && (d3 <= DimensionSize(3) - 1 - border);
-//    }
-
-//    template <typename BorderT, typename Derived,
-//              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == 4 &&
-//                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
-//                                      std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value, int>::type = 0>
-//    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const Eigen::MatrixBase<Derived> & point, const BorderT border) const {
-//        return InBounds(point(0),point(1),point(2),point(3),border);
-//    }
-
     template <typename PosHead, typename ... PosTail,
               typename std::enable_if<sizeof...(PosTail) == (D-1) && std::is_fundamental<PosHead>::value, int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ bool InBounds(PosHead head, PosTail... tail) const {
@@ -1792,7 +1766,7 @@ public:
     template <Residency R2, bool Const2, bool Check=false>
     inline void CopyFrom(const Tensor<D,T,R2,Const2> & other) {
         static_assert(!Const,"you cannot copy to a const tensor");
-        internal::EquivalenceChecker<Check>::template CheckEquivalentSize<DimT,D>(Dimensions(),other.Dimensions());
+        internal::EquivalenceChecker<Check>::template CheckEquivalentSize<DimT,D>(this->Dimensions(),other.Dimensions());
         internal::Copier<T,R,R2>::Copy(data_,other.Data(),Count());
     }
 
@@ -1863,65 +1837,14 @@ private:
 
 };
 
-//namespace internal {
-
-//typedef unsigned int DimT;
-
-//template <bool Packed>
-//struct FirstDimensionStride;
-
-//template <>
-//struct FirstDimensionStride<true> {
-//    inline DimT stride() const { return 1; }
-//};
-
-//template <>
-//struct FirstDimensionStride<false> {
-//    inline DimT stride() const { return stride_; }
-//    DimT stride_;
-//};
-
-
-//template <bool SourcePacked, unsigned int FirstDimension>
-//struct SliceReturnValPacked {
-////    using Determinant = PackingDeterminant<SourcePacked>::Determinant;
-////    static constexpr bool Packed = Determinant<FirstDimension>::Packed;
-//    static constexpr bool Packed = false;
-//};
-
-//template <>
-//struct SliceReturnValPacked<true,0> {
-//    static constexpr bool Packed = true;
-//};
-
-
-//} // namespace internal
-
-//template <uint D, typename T, Residency R = HostResident, bool Const = false, bool Packed = true>
-//class Tensor {
-//public:
-
-//    typedef internal::DimT DimT;
-//    typedef unsigned int IndT;
-
-//    inline __NDT_CUDA_HD_PREFIX__ DimT dimensionSize(const IndT dim) const {
-//        assert(dim < D);
-//        return dimensions_[dim];
-//    }
-
-//    template <unsigned int FirstDimension, unsigned int ... Rest>
-//    inline __NDT_CUDA_HD_PREFIX__ Tensor<D,T,R,Const,internal::SliceReturnValPacked<Packed,FirstDimension>::Packed> slice() {
-
-//    }
-
-//protected:
-
-//    std::array<DimT,D> dimensions_;
-//    internal::FirstDimensionStride<Packed> firstDimensionStride_;
-//    std::array<DimT,D-1> otherDimensionStrides_;
-//    typename ConstQualifier<T *,Const>::type values_;
-
-//};
+// -=-=-=-=- traits -=-=-=-=-
+template <uint D_, typename T_, Residency R_, bool Const_>
+struct TensorTraits<Tensor<D_, T_, R_, Const_> > {
+    static constexpr uint D = D_;
+    using T = T_;
+    static constexpr Residency R = R_;
+    static constexpr bool Const = Const_;
+};
 
 // -=-=-=-=- full tensor typedefs -=-=-=-=-
 #define __NDT_TENSOR_TYPEDEFS___(i, type, appendix)                                       \
@@ -2000,5 +1923,7 @@ __NDT_DIMENSIONAL_ALIAS__(3,Volume);
 
 
 } // namespace NDT
+
+#include <NDT/TensorView.h>
 
 #undef __NDT_CUDA_HD_PREFIX__
