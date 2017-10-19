@@ -63,4 +63,26 @@ struct TensorTraits<TensorView<D_, T_, R_, Const_> > {
     static constexpr bool Const = Const_;
 };
 
+// -=-=-=-=- typedefs -=-=-=-=-
+#define __NDT_TENSOR_VIEW_TYPEDEFS___(i, type, appendix) \
+    typedef TensorView<i,type,HostResident> TensorView##i##appendix; \
+    typedef TensorView<i,type,DeviceResident> DeviceTensorView##i##appendix; \
+    typedef TensorView<i,type,HostResident,true> ConstTensorView##i##appendix; \
+    typedef TensorView<i,type,DeviceResident,true> ConstDeviceTensorView##i##appendix
+
+#define __NDT_TENSOR_VIEW_TYPEDEFS__(type, appendix) \
+    __NDT_TENSOR_VIEW_TYPEDEFS___(1, type, appendix); \
+    __NDT_TENSOR_VIEW_TYPEDEFS___(2, type, appendix); \
+    __NDT_TENSOR_VIEW_TYPEDEFS___(3, type, appendix); \
+    __NDT_TENSOR_VIEW_TYPEDEFS___(4, type, appendix); \
+    __NDT_TENSOR_VIEW_TYPEDEFS___(5, type, appendix)
+
+__NDT_TENSOR_VIEW_TYPEDEFS__(float,f);
+__NDT_TENSOR_VIEW_TYPEDEFS__(double,d);
+__NDT_TENSOR_VIEW_TYPEDEFS__(int,i);
+__NDT_TENSOR_VIEW_TYPEDEFS__(unsigned int,ui);
+__NDT_TENSOR_VIEW_TYPEDEFS__(unsigned char,uc);
+
+
+
 } // namespace NDT

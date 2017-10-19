@@ -32,7 +32,17 @@ TEST(TensorViewTest, Test2D) {
 
     Tensor<2, float, HostResident> tensor({3, 3}, data);
 
-    TensorView<2, float, HostResident> tensorView = tensor.Slice(1, 0, 1, 2);
+    TensorView<2, float, HostResident> tensorView = tensor.Slice({1, 0}, {1, 2});
+
+    EXPECT_EQ(2, tensorView.Dimensions().rows());
+
+    EXPECT_EQ(1, tensorView.DimensionSize(0));  EXPECT_EQ(1, tensorView.Dimensions()(0));
+    EXPECT_EQ(2, tensorView.DimensionSize(1));  EXPECT_EQ(2, tensorView.Dimensions()(1));
+
+    EXPECT_EQ(1, tensorView(0, 0));
+    EXPECT_EQ(4, tensorView(0, 1));
+
+    tensorView = tensor.Slice({1,0}, {1,2});
 
     EXPECT_EQ(2, tensorView.Dimensions().rows());
 
