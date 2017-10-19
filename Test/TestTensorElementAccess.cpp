@@ -16,9 +16,13 @@ TEST(TensorElementAccessTest, Test1D) {
         EXPECT_EQ(i, tensor(i));
     }
 
+    Tensor<1, float, HostResident, true> constTensor = tensor;
+
     tensor(7) = 3;
 
     EXPECT_EQ(3, tensor(7));
+
+    EXPECT_EQ(3, constTensor(7));
 
 }
 
@@ -34,9 +38,13 @@ TEST(TensorElementAccessTest, Test2D) {
         }
     }
 
+    Tensor<2, uint64_t, HostResident, true> constTensor = tensor;
+
     tensor(1,2) = 13;
 
     EXPECT_EQ(13, tensor(1,2));
+
+    EXPECT_EQ(13, constTensor(1,2));
 
 }
 
@@ -54,11 +62,16 @@ TEST(TensorElementAccessTest, Test3D) {
         }
     }
 
+    Tensor<3, int, HostResident, true> constTensor = tensor;
+
     tensor(1,2,0) = -1;
 
     EXPECT_EQ(-1, tensor(1,2,0));
 
+    EXPECT_EQ(-1, constTensor(1,2,0));
+
 }
+
 
 TEST(TensorElementAccessTest, Test4D) {
 
@@ -76,9 +89,13 @@ TEST(TensorElementAccessTest, Test4D) {
         }
     }
 
+    Tensor<4, double, HostResident, true> constTensor = tensor;
+
     tensor(1,0,0,1) = 2.5;
 
     EXPECT_EQ(2.5, tensor(1,0,0,1));
+
+    EXPECT_EQ(2.5, constTensor(1,0,0,1));
 
 }
 

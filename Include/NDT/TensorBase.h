@@ -38,7 +38,7 @@ public:
         return static_cast<const Derived *>(this)->Element(args...);
     }
 
-    template <typename ... ArgTs>
+    template <typename ... ArgTs, typename U = T, typename std::enable_if<!Const && sizeof(U),int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ T & operator()(const ArgTs ... args) {
         return static_cast<Derived *>(this)->Element(args...);
     }
