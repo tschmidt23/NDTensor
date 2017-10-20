@@ -53,7 +53,20 @@ public:
 //        return static_cast<Derived *>(this)->Element(d0);
 //    }
 
-private:
+    // -=-=-=-=-=-=- conversion to base -=-=-=-=-=-=-
+    inline Derived & Downcast() {
+        return static_cast<Derived &>(*this);
+    }
+
+    inline const Derived & Downcast() const {
+        return static_cast<const Derived &>(*this);
+    }
+
+protected:
+
+    TensorBase() = default;
+    TensorBase(const TensorBase<Derived> &) = default;
+    TensorBase<Derived> & operator=(const TensorBase<Derived> &) = default;
 
 };
 
