@@ -50,6 +50,11 @@ public:
         return tensor_.Data()[indices.dot(strides_)];
     };
 
+    template <typename Derived>
+    inline void CopyFrom(const TensorBase<Derived> & other) {
+        internal::SliceCopier::Copy(*this, other);
+    }
+
 private:
 
     // -=-=-=-=-=-=- sizing functions -=-=-=-=-=-=-

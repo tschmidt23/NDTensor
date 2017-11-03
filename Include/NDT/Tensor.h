@@ -1533,26 +1533,26 @@ public:
               typename std::enable_if<internal::IsIndexType<DerivedStart,D>::Value &&
                                       internal::IsSizeType<DerivedSize,D>::Value, int>::type = 0>
     inline TensorView<D, T, R, Const> Slice(const Eigen::MatrixBase<DerivedStart> & start, const Eigen::MatrixBase<DerivedSize> & size) {
-        return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>(size, &(*this)(start)), Strides());
+        return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>(size, &this->Element(start)), Strides());
     }
 
     template <typename DerivedStart, typename DerivedSize,
             typename std::enable_if<internal::IsIndexType<DerivedStart,D>::Value &&
                                     internal::IsSizeType<DerivedSize,D>::Value, int>::type = 0>
     inline TensorView<D, T, R, true> Slice(const Eigen::MatrixBase<DerivedStart> & start, const Eigen::MatrixBase<DerivedSize> & size) const {
-        return TensorView<D, T, R, true>(Tensor<D, T, R, true>(size, &(*this)(start)), Strides());
+        return TensorView<D, T, R, true>(Tensor<D, T, R, true>(size, &this->Element(start)), Strides());
     }
 
     template <typename StartT = DimT, typename SizeT = DimT, int Options = 0, int D2 = D,
               typename std::enable_if<D2 == D && std::is_integral<SizeT>::value && std::is_arithmetic<StartT>::value, int>::type = 0>
     inline TensorView<D, T, R, Const> Slice(const Eigen::Matrix<StartT, D2, 1, Options> & start, const Eigen::Matrix<SizeT, D2, 1, Options> & size) {
-        return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>(size, &(*this)(start)), Strides());
+        return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>(size, &this->Element(start)), Strides());
     }
 
     template <typename StartT = DimT, typename SizeT = DimT, int Options = 0, int D2 = D,
               typename std::enable_if<D2 == D && std::is_integral<SizeT>::value && std::is_arithmetic<StartT>::value, int>::type = 0>
     inline TensorView<D, T, R, true> Slice(const Eigen::Matrix<StartT, D2, 1, Options> & start, const Eigen::Matrix<SizeT, D2, 1, Options> & size) const {
-        return TensorView<D, T, R, true>(Tensor<D, T, R, true>(size, &(*this)(start)), Strides());
+        return TensorView<D, T, R, true>(Tensor<D, T, R, true>(size, &this->Element(start)), Strides());
     }
 
     // -=-=-=-=-=-=- indexing functions -=-=-=-=-=-=-
