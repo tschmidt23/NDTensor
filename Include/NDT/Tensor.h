@@ -83,6 +83,69 @@ struct Copier<T,HostResident,HostResident> {
 
 };
 
+template <int I, typename DestDerived, typename SrcDerived>
+struct SliceCopyLoop {
+
+    template <int D = TensorTraits<DestDerived>::D,
+            typename IndicesDerived,
+            typename std::enable_if<D == TensorTraits<SrcDerived>::D &&
+                                    std::is_same<typename TensorTraits<DestDerived>::T,
+                                            typename TensorTraits<SrcDerived>::T>::value &&
+                                    !TensorTraits<DestDerived>::Const &&
+                                    Eigen::internal::traits<IndicesDerived>::RowsAtCompileTime == D-1-I &&
+                                    Eigen::internal::traits<IndicesDerived>::ColsAtCompileTime == 1,
+                    int>::type = 0>
+    inline static void Copy(TensorBase<DestDerived> & dest, const TensorBase<SrcDerived> & src,
+                            const Eigen::MatrixBase<IndicesDerived> & indices) {
+
+        for (int i = 0; i < dest.DimensionSize(I); ++i) {
+
+            SliceCopyLoop<I-1, DestDerived, SrcDerived>::Copy(dest, src, (Eigen::Matrix<uint,D-I,1>() << i, indices).finished());
+
+        }
+
+    }
+
+};
+
+template <typename DestDerived, typename SrcDerived>
+struct SliceCopyLoop<0, DestDerived, SrcDerived> {
+
+    template <int D = TensorTraits<DestDerived>::D,
+            typename IndicesDerived,
+            typename std::enable_if<D == TensorTraits<SrcDerived>::D &&
+                                    std::is_same<typename TensorTraits<DestDerived>::T,
+                                            typename TensorTraits<SrcDerived>::T>::value &&
+                                    !TensorTraits<DestDerived>::Const &&
+                                    Eigen::internal::traits<IndicesDerived>::RowsAtCompileTime == D-1 &&
+                                    Eigen::internal::traits<IndicesDerived>::ColsAtCompileTime == 1,
+                    int>::type = 0>
+    inline static void Copy(TensorBase<DestDerived> & dest, const TensorBase<SrcDerived> & src,
+                            const Eigen::MatrixBase<IndicesDerived> & indices) {
+
+        using T = typename TensorTraits<DestDerived>::T;
+        static constexpr Residency DestR = TensorTraits<DestDerived>::R;
+        static constexpr Residency SrcR = TensorTraits<SrcDerived>::R;
+
+        Copier<T, DestR, SrcR>::Copy(&dest( (Eigen::Matrix<uint,D,1>() << 0, indices ).finished() ),
+                                     &src( (Eigen::Matrix<uint,D,1>() << 0, indices).finished() ),
+                                     dest.DimensionSize(0));
+
+    }
+
+};
+
+struct SliceCopier {
+
+    template <typename DestDerived, typename SrcDerived>
+    inline static void Copy(TensorBase<DestDerived> & dest, const TensorBase<SrcDerived> & src) {
+
+        SliceCopyLoop<TensorTraits<DestDerived>::D-1, DestDerived, SrcDerived>::Copy(dest, src, Eigen::Matrix<uint,0,1>());
+
+    }
+
+};
+
 // -=-=-=- size equivalence checking -=-=-=-
 template <bool Check>
 struct EquivalenceChecker {
@@ -1207,6 +1270,24 @@ struct DifferenceTypeTraits<ForwardDifference> {
     static constexpr int borderHigh = 1;
 };
 
+template <typename Derived, int D>
+struct IsIndexType {
+
+    static constexpr bool Value = Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
+                                  Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
+                                  std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value;
+
+};
+
+template <typename Derived, int D>
+struct IsSizeType {
+
+    static constexpr bool Value = Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
+                                  Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
+                                  std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value;
+
+};
+
 template <uint D>
 struct StrideConstructor {
 
@@ -1448,9 +1529,30 @@ public:
                 Strides());
     }
 
-    template <int D2 = D, typename std::enable_if<D2 == D,int>::type = 0>
-    inline TensorView<D, T, R> Slice(const Eigen::Matrix<DimT, D2, 1, Eigen::DontAlign> & start, const Eigen::Matrix<DimT, D2, 1, Eigen::DontAlign> & size) {
+    template <typename DerivedStart, typename DerivedSize,
+              typename std::enable_if<internal::IsIndexType<DerivedStart,D>::Value &&
+                                      internal::IsSizeType<DerivedSize,D>::Value, int>::type = 0>
+    inline TensorView<D, T, R, Const> Slice(const Eigen::MatrixBase<DerivedStart> & start, const Eigen::MatrixBase<DerivedSize> & size) {
         return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>(size, &(*this)(start)), Strides());
+    }
+
+    template <typename DerivedStart, typename DerivedSize,
+            typename std::enable_if<internal::IsIndexType<DerivedStart,D>::Value &&
+                                    internal::IsSizeType<DerivedSize,D>::Value, int>::type = 0>
+    inline TensorView<D, T, R, true> Slice(const Eigen::MatrixBase<DerivedStart> & start, const Eigen::MatrixBase<DerivedSize> & size) const {
+        return TensorView<D, T, R, true>(Tensor<D, T, R, true>(size, &(*this)(start)), Strides());
+    }
+
+    template <typename StartT = DimT, typename SizeT = DimT, int Options = 0, int D2 = D,
+              typename std::enable_if<D2 == D && std::is_integral<SizeT>::value && std::is_arithmetic<StartT>::value, int>::type = 0>
+    inline TensorView<D, T, R, Const> Slice(const Eigen::Matrix<StartT, D2, 1, Options> & start, const Eigen::Matrix<SizeT, D2, 1, Options> & size) {
+        return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>(size, &(*this)(start)), Strides());
+    }
+
+    template <typename StartT = DimT, typename SizeT = DimT, int Options = 0, int D2 = D,
+              typename std::enable_if<D2 == D && std::is_integral<SizeT>::value && std::is_arithmetic<StartT>::value, int>::type = 0>
+    inline TensorView<D, T, R, true> Slice(const Eigen::Matrix<StartT, D2, 1, Options> & start, const Eigen::Matrix<SizeT, D2, 1, Options> & size) const {
+        return TensorView<D, T, R, true>(Tensor<D, T, R, true>(size, &(*this)(start)), Strides());
     }
 
     // -=-=-=-=-=-=- indexing functions -=-=-=-=-=-=-
@@ -1805,6 +1907,13 @@ public:
         static_assert(!Const,"you cannot copy to a const tensor");
         internal::EquivalenceChecker<Check>::template CheckEquivalentSize<DimT,D>(this->Dimensions(),other.Dimensions());
         internal::Copier<T,R,R2>::Copy(data_,other.Data(),Count());
+    }
+
+    template <Residency R2, bool Const2, bool Check=false>
+    inline void CopyFrom(const TensorView<D,T,R2,Const2> & view) {
+        static_assert(!Const,"you cannot copy to a const tensor");
+        internal::EquivalenceChecker<Check>::template CheckEquivalentSize<DimT,D>(this->Dimensions(),view.Dimensions());
+        internal::SliceCopier::Copy(*this, view);
     }
 
 protected:

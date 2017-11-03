@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include <NDT/Tensor.h>
-#include <NDT/TensorView.h>
 
 namespace {
 
