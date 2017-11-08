@@ -39,16 +39,16 @@ public:
     }
 
     template <typename Derived,
-              typename std::enable_if<internal::IsIndexType<Derived, D>::Value, int>::type = 0>
+              typename std::enable_if<internal::IsIntegralVectorType<Derived, D>::Value, int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ T & Element(const Eigen::MatrixBase<Derived> & indices) {
         return tensor_.Data()[indices.dot(strides_)];
-    };
+    }
 
     template <typename Derived,
-            typename std::enable_if<internal::IsIndexType<Derived, D>::Value, int>::type = 0>
+            typename std::enable_if<internal::IsIntegralVectorType<Derived, D>::Value, int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ const T & Element(const Eigen::MatrixBase<Derived> & indices) const {
         return tensor_.Data()[indices.dot(strides_)];
-    };
+    }
 
     template <typename Derived>
     inline void CopyFrom(const TensorBase<Derived> & other) {
