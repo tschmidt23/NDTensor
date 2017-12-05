@@ -1715,6 +1715,13 @@ public:
                                               internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
     }
 
+    template <typename Transformer, typename Derived,
+            typename std::enable_if<internal::IsRealVectorType<Derived,D>::Value, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ typename Transformer::ReturnType TransformInterpolate(Transformer transformer, const Eigen::MatrixBase<Derived> & v) const /*- > decltype(Transformer::operator())*/ {
+        return internal::TransformInterpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()), transformer,
+                                              VectorToTuple(v.reverse()));
+    }
+
     template <typename Transformer, typename ValidityCheck, typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ typename Transformer::ReturnType TransformInterpolateValidOnly(Transformer transformer, ValidityCheck check, IdxTs ... vs) const {
