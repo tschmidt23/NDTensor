@@ -190,11 +190,13 @@ struct AutomaticAllocator<T,HostResident> {
 
     inline static T * allocate(const std::size_t length) {
         T * vals = new T[length];
+//        T * vals = std::malloc(length * sizeof(T));
         return vals;
     }
 
     inline static void deallocate(T * vec) {
         delete [] vec;
+//        std::free(vec);
     }
 
 };
@@ -1888,6 +1890,7 @@ protected:
 
 private:
 
+    // TODO: I think this is duplicated
     template <typename Derived>
     struct IsConvertibleToDimensions {
         static constexpr bool Value = Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
@@ -1922,6 +1925,17 @@ public:
 
     ManagedTensor() :
         Tensor<D,T,R,false>::Tensor(Eigen::Matrix<uint,D,1>::Zero(), nullptr) { }
+
+    ManagedTensor(ManagedTensor && other)
+        : Tensor<D,T,R,false>(other.dimensions_, other.data_) {
+        other.data_ = nullptr;
+    }
+
+    ManagedTensor & operator=(ManagedTensor && other) {
+        this->dimensions_ = other.dimensions_;
+        this->data_ = other.data_;
+        other.data_ = nullptr;
+    }
 
     template <int D2 = D, typename std::enable_if<D2 == 1,int>::type = 0>
     ManagedTensor(const DimT length) :
