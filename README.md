@@ -23,7 +23,7 @@ The `ManagedTensor` class both derives from and provides implicit conversion to 
 
 There are aliases for low-dimensional tensors according to more commonly used names, i.e. `Tensor<1,T>` is also known as `Vector<T>`,  `Tensor<2,T>` is also known as `Image<T>` and `Tensor<3,T>` is also known as `Volume<T>`. The corresponding aliases also exist for `ManagedTensor`.
 
-###Element Access
+### Element Access
 
 The `Tensor` class overloads `operator()`, which is called with a number of parameters depending on the tensor dimensionality, or an Eigen vector with the corresponding length. For example:
 
