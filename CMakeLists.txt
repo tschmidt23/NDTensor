@@ -29,3 +29,17 @@ if (${GTEST_FOUND})
     target_include_directories(Test PUBLIC ${PROJECT_SOURCE_DIR}/Include ${EIGEN3_INCLUDE_DIR})
 
 endif()
+
+set( NDTensor_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include/" )
+set( NDTensor_INCLUDE_DIRS ${NDTensor_INCLUDE_DIR} )
+
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/NDTensorConfig.cmake.in
+                ${CMAKE_CURRENT_BINARY_DIR}/NDTensorConfig.cmake
+                @ONLY ESCAPE_QUOTES)
+
+install_files(/include/NDT .h 
+	Include/NDT/TensorBase 
+	Include/NDT/Tensor
+	Include/NDT/TensorView
+	Include/NDT/TupleHelpers)
+install_files(/share/NDT .cmake NDTensorConfig)

@@ -330,15 +330,16 @@ inline Scalar Interpolate(const Scalar * data,
 
 }
 
-template <typename Scalar,typename ... IdxTs>
+
+template <typename Scalar, typename HeadT, typename std::enable_if<!std::is_floating_point<HeadT>::value && !std::is_integral<HeadT>::value, int>::type = 0, typename ... IdxTs>
 __NDT_CUDA_HD_PREFIX__
 inline Scalar Interpolate(const Scalar * data,
                           const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
-                          const std::tuple<float, IdxTs...> remainingIndices) {
+                          const std::tuple<HeadT, IdxTs...> remainingIndices) {
 
-    const float firstIndex = std::get<0>(remainingIndices);
-    const uint i = firstIndex;
-    const float t = firstIndex - i;
+    const HeadT & firstIndex = std::get<0>(remainingIndices);
+    const uint i = static_cast<double>(firstIndex);
+    const HeadT t = firstIndex - i;
 
     return (1-t)*Interpolate(data + i*dimensions.tail.product(),
                              dimensions.tail,
@@ -349,13 +350,32 @@ inline Scalar Interpolate(const Scalar * data,
 
 }
 
-template <typename Scalar, typename ... IdxTs>
+template <typename Scalar, typename HeadT, typename std::enable_if<std::is_floating_point<HeadT>::value, int>::type = 0, typename ... IdxTs>
 __NDT_CUDA_HD_PREFIX__
 inline Scalar Interpolate(const Scalar * data,
                           const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
-                          const std::tuple<int, IdxTs...> remainingIndices) {
+                          const std::tuple<HeadT, IdxTs...> remainingIndices) {
 
-    const int firstIndex = std::get<0>(remainingIndices);
+    const HeadT firstIndex = std::get<0>(remainingIndices);
+    const uint i = firstIndex;
+    const HeadT t = firstIndex - i;
+
+    return (1-t)*Interpolate(data + i*dimensions.tail.product(),
+                             dimensions.tail,
+                             GetTail(remainingIndices))
+           + t * Interpolate(data + (i+1)*dimensions.tail.product(),
+                             dimensions.tail,
+                             GetTail(remainingIndices));
+
+}
+
+template <typename Scalar, typename HeadT, typename std::enable_if<std::is_integral<HeadT>::value, int>::type = 0, typename ... IdxTs>
+__NDT_CUDA_HD_PREFIX__
+inline Scalar Interpolate(const Scalar * data,
+                          const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
+                          const std::tuple<HeadT, IdxTs...> remainingIndices) {
+
+    const HeadT firstIndex = std::get<0>(remainingIndices);
 
     return Interpolate(data + firstIndex*dimensions.tail.product(),
                        dimensions.tail,

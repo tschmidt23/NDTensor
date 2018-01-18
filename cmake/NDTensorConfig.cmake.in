@@ -1,0 +1,4 @@
+set(NDTensor_FOUND 1)
+
+set ( NDTensor_INCLUDE_DIR  "@NDTensor_INCLUDE_DIR@" )
+set ( NDTensor_INCLUDE_DIRS "@NDTensor_INCLUDE_DIRS@" )

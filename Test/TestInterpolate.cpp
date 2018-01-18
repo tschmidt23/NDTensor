@@ -36,7 +36,7 @@ TEST(InterpolationTest, Test2D) {
 
         // test both float and int versions
         ASSERT_NEAR(x, tensor.Interpolate(x, 0), 1e-5);
-        ASSERT_NEAR(x, tensor.Interpolate(x, 0.f), 1e-5);
+        ASSERT_NEAR(x, tensor.Interpolate(x, 0.), 1e-5);
 
     }
 
