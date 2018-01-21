@@ -37,7 +37,9 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/NDTensorConfig.cmake.in
                 ${CMAKE_CURRENT_BINARY_DIR}/NDTensorConfig.cmake
                 @ONLY ESCAPE_QUOTES)
 
-install_files(/include/NDT .h 
+install_files(/include/NDT .h
+    Include/NDT/ConstQualifier.h
+    Include/NDT/Copying.h
 	Include/NDT/TensorBase 
 	Include/NDT/Tensor
 	Include/NDT/TensorView

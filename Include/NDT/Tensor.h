@@ -10,6 +10,8 @@
 
 #include <NDT/TensorBase.h>
 
+#include <NDT/ConstQualifier.h>
+
 namespace NDT {
 
 enum Residency {
@@ -17,134 +19,13 @@ enum Residency {
     DeviceResident
 };
 
+} // namespace NDT
+
+#include <NDT/Copying.h>
+
+namespace NDT {
+
 namespace internal {
-
-// -=-=-=- const qualification -=-=-=-
-template <typename T, bool ConstQualified>
-struct ConstQualifier;
-
-template <typename T>
-struct ConstQualifier<T,false> {
-    typedef T type;
-};
-
-template <typename T>
-struct ConstQualifier<T,true> {
-    typedef const T type;
-};
-
-template <typename T>
-struct ConstQualifier<T *,false> {
-    typedef T * type;
-};
-
-template <typename T>
-struct ConstQualifier<T *,true> {
-    typedef const T * type;
-};
-
-// -=-=-=- copying -=-=-=-
-
-template <Residency DestR, Residency SrcR>
-struct CopyTypeTraits;
-
-#ifndef __NDT_NO_CUDA__
-template <>
-struct CopyTypeTraits<HostResident,DeviceResident> {
-    static constexpr cudaMemcpyKind copyType = cudaMemcpyDeviceToHost;
-};
-
-template <>
-struct CopyTypeTraits<DeviceResident,HostResident> {
-    static constexpr cudaMemcpyKind copyType = cudaMemcpyHostToDevice;
-};
-
-template <>
-struct CopyTypeTraits<DeviceResident,DeviceResident> {
-    static constexpr cudaMemcpyKind copyType = cudaMemcpyDeviceToDevice;
-};
-#endif // __NDT_NO_CUDA__
-
-template <typename T, Residency DestR, Residency SrcR>
-struct Copier {
-
-    inline static void Copy(T * dst, const T * src, const std::size_t N) {
-        cudaMemcpy(dst,src,N*sizeof(T),CopyTypeTraits<DestR,SrcR>::copyType);
-    }
-
-};
-
-template <typename T>
-struct Copier<T,HostResident,HostResident> {
-
-    inline static void Copy(T * dst, const T * src, const std::size_t N) {
-        std::memcpy(dst,src,N*sizeof(T));
-    }
-
-};
-
-template <int I, typename DestDerived, typename SrcDerived>
-struct SliceCopyLoop {
-
-    template <int D = TensorTraits<DestDerived>::D,
-            typename IndicesDerived,
-            typename std::enable_if<D == TensorTraits<SrcDerived>::D &&
-                                    std::is_same<typename TensorTraits<DestDerived>::T,
-                                            typename TensorTraits<SrcDerived>::T>::value &&
-                                    !TensorTraits<DestDerived>::Const &&
-                                    Eigen::internal::traits<IndicesDerived>::RowsAtCompileTime == D-1-I &&
-                                    Eigen::internal::traits<IndicesDerived>::ColsAtCompileTime == 1,
-                    int>::type = 0>
-    inline static void Copy(TensorBase<DestDerived> & dest, const TensorBase<SrcDerived> & src,
-                            const Eigen::MatrixBase<IndicesDerived> & indices) {
-
-        for (int i = 0; i < dest.DimensionSize(I); ++i) {
-
-            SliceCopyLoop<I-1, DestDerived, SrcDerived>::Copy(dest, src, (Eigen::Matrix<uint,D-I,1>() << i, indices).finished());
-
-        }
-
-    }
-
-};
-
-template <typename DestDerived, typename SrcDerived>
-struct SliceCopyLoop<0, DestDerived, SrcDerived> {
-
-    template <int D = TensorTraits<DestDerived>::D,
-            typename IndicesDerived,
-            typename std::enable_if<D == TensorTraits<SrcDerived>::D &&
-                                    std::is_same<typename TensorTraits<DestDerived>::T,
-                                            typename TensorTraits<SrcDerived>::T>::value &&
-                                    !TensorTraits<DestDerived>::Const &&
-                                    Eigen::internal::traits<IndicesDerived>::RowsAtCompileTime == D-1 &&
-                                    Eigen::internal::traits<IndicesDerived>::ColsAtCompileTime == 1,
-                    int>::type = 0>
-    inline static void Copy(TensorBase<DestDerived> & dest, const TensorBase<SrcDerived> & src,
-                            const Eigen::MatrixBase<IndicesDerived> & indices) {
-
-        using T = typename TensorTraits<DestDerived>::T;
-        static constexpr Residency DestR = TensorTraits<DestDerived>::R;
-        static constexpr Residency SrcR = TensorTraits<SrcDerived>::R;
-
-        Copier<T, DestR, SrcR>::Copy(&dest( (Eigen::Matrix<uint,D,1>() << 0, indices ).finished() ),
-                                     &src( (Eigen::Matrix<uint,D,1>() << 0, indices).finished() ),
-                                     dest.DimensionSize(0));
-
-    }
-
-};
-
-struct SliceCopier {
-
-    template <typename DestDerived, typename SrcDerived>
-    inline static void Copy(TensorBase<DestDerived> & dest, const TensorBase<SrcDerived> & src) {
-
-        SliceCopyLoop<TensorTraits<DestDerived>::D-1, DestDerived, SrcDerived>::Copy(dest, src, Eigen::Matrix<uint,0,1>());
-
-    }
-
-};
 
 // -=-=-=- size equivalence checking -=-=-=-
 template <bool Check>
@@ -1161,11 +1042,11 @@ struct GradientComputer {
         GradientFiller<Diff,Scalar,1,D,0>::fill(gradient,
                                                 GradientComputeCore<Diff,Interpolator<Scalar>,Scalar,1,D,Eigen::DontAlign | Eigen::RowMajor>(data,
                                                                                              internal::IndexList<uint,D>(dimensions.reverse()),
-                                                                                             internal::TupleReverser<std::tuple<IdxTs...> >::reverse(indices),
+                                                                                             internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
                                                                                                                                      Interpolator<Scalar>()),
                                                 data,
                                                 internal::IndexList<uint,D>(dimensions.reverse()),
-                                                internal::TupleReverser<std::tuple<IdxTs...> >::reverse(indices));
+                                                internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices));
         return gradient;
     }
 
@@ -1184,7 +1065,7 @@ struct GradientComputer {
                                                                                                                                                            TransformInterpolator<Transformer>(transformer)),
                                                 data,
                                                 internal::IndexList<uint,D>(dimensions.reverse()),
-                                                internal::TupleReverser<std::tuple<IdxTs...> >::reverse(indices));
+                                                internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices));
         return gradient;
 
     }
@@ -1752,6 +1633,22 @@ public:
                                                        transformer, check,
                                                        internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
 
+    }
+
+    // -=-=-=-=-=-=- interpolation derivative functions -=-=-=-=-=-=-
+    template <typename ... IdxTs,
+            typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ T InterpolationGradient(const IdxTs ... vs) const {
+//        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
+//                                     internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
+    }
+
+    template <typename Derived,
+            typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
+                                    Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ T InterpolationtGradient(const Eigen::MatrixBase<Derived> & v) const {
+//        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
+//                                     VectorToTuple(v.reverse()));
     }
 
     template <typename ValidityCheck, typename ... IdxTs,
