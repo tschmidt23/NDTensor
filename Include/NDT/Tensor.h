@@ -22,6 +22,7 @@ enum Residency {
 } // namespace NDT
 
 #include <NDT/Copying.h>
+#include <NDT/GradientTraits.h>
 
 namespace NDT {
 
@@ -1636,21 +1637,24 @@ public:
     }
 
     // -=-=-=-=-=-=- interpolation derivative functions -=-=-=-=-=-=-
-    template <typename ... IdxTs,
-            typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ T InterpolationGradient(const IdxTs ... vs) const {
-//        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
-//                                     internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
-    }
+//    template <typename ... IdxTs,
+//            typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
+//    inline __NDT_CUDA_HD_PREFIX__ T InterpolationGradient(const IdxTs ... vs) const {
+////        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
+////                                     internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
+//    }
+//
+//    template <typename Derived,
+//            typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
+//                                    Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
+//    inline __NDT_CUDA_HD_PREFIX__ T InterpolationtGradient(const Eigen::MatrixBase<Derived> & v) const {
+////        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
+////                                     VectorToTuple(v.reverse()));
+//    }
 
-    template <typename Derived,
-            typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
-                                    Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ T InterpolationtGradient(const Eigen::MatrixBase<Derived> & v) const {
-//        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
-//                                     VectorToTuple(v.reverse()));
-    }
+    // -=-=-=-=-=-=-  -=-=-=-=-=-=-
 
+    // TODO: is this needed?
     template <typename ValidityCheck, typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ bool validForInterpolation(ValidityCheck check, const IdxTs ... vs) {
@@ -1718,7 +1722,7 @@ public:
     template <typename Derived, \
               typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D && \
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0> \
-    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientComputer<T,D,internal::DiffType##Difference>::GradientType DiffType##Difference(const Eigen::MatrixBase<Derived> & v) const { \
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType DiffType##Difference(const Eigen::MatrixBase<Derived> & v) const { \
         \
         return internal::GradientComputer<T,D,internal::DiffType##Difference>::compute(data_,dimensions_,VectorToTuple(v)); \
         \
@@ -1726,7 +1730,7 @@ public:
     \
     template <typename ... IdxTs, \
               typename std::enable_if<sizeof...(IdxTs) == D,int>::type = 0> \
-    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientComputer<T,D,internal::DiffType##Difference>::GradientType DiffType##Difference(const IdxTs ... v) const { \
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType DiffType##Difference(const IdxTs ... v) const { \
         \
         return internal::GradientComputer<T,D,internal::DiffType##Difference>::template compute<IdxTs...>(data_,dimensions_,std::tuple<IdxTs...>(v...)); \
         \
