@@ -220,7 +220,7 @@ inline Scalar Interpolate(const Scalar * data,
                           const std::tuple<HeadT, IdxTs...> remainingIndices) {
 
     const HeadT & firstIndex = std::get<0>(remainingIndices);
-    const uint i = static_cast<double>(firstIndex);
+    const uint i = static_cast<double>(firstIndex); // TODO: what is going on here?
     const HeadT t = firstIndex - i;
 
     return (1-t)*Interpolate(data + i*dimensions.tail.product(),
@@ -1637,20 +1637,20 @@ public:
     }
 
     // -=-=-=-=-=-=- interpolation derivative functions -=-=-=-=-=-=-
-//    template <typename ... IdxTs,
-//            typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
-//    inline __NDT_CUDA_HD_PREFIX__ T InterpolationGradient(const IdxTs ... vs) const {
-////        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
-////                                     internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
-//    }
-//
-//    template <typename Derived,
-//            typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
-//                                    Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-//    inline __NDT_CUDA_HD_PREFIX__ T InterpolationtGradient(const Eigen::MatrixBase<Derived> & v) const {
-////        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
-////                                     VectorToTuple(v.reverse()));
-//    }
+    template <typename ... IdxTs,
+            typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ typename GradientTraits<T>::GradientType InterpolationGradient(const IdxTs ... vs) const {
+//        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
+//                                     internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
+    }
+
+    template <typename Derived,
+            typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
+                                    Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ typename GradientTraits<T>::GradientType InterpolationtGradient(const Eigen::MatrixBase<Derived> & v) const {
+//        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
+//                                     VectorToTuple(v.reverse()));
+    }
 
     // -=-=-=-=-=-=-  -=-=-=-=-=-=-
 
