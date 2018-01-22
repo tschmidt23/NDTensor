@@ -978,8 +978,15 @@ private:
 
 };
 
+// In the general case, the dimension along with the gradient is taken is indexed with a real value,
+// and the gradient is determined by the local linear slope of the interpolation.
+//
+// TODO: this can be made more efficient. Currently, an interpolation gradient in D dimensions samples
+// 2D points (the floor and ceil of each real-valued index). However, because the gradients are linear,
+// the same gradient results when considering the center value and just the floor or the ceil (but not
+// both) along each dimension, requiring only D+1 samples.
 template <typename Scalar, int D, int I, typename IndexIType, typename ... IdxTs,
-          typename std::enable_if<std::is_floating_point<IndexIType>::value, int>::type = 0>
+        typename std::enable_if<std::is_floating_point<IndexIType>::value, int>::type = 0>
 inline Scalar InterpolationGradientAlongOneDimension(const Scalar * data,
                                                      const Eigen::Matrix<uint,D,1> & dimensions,
                                                      const std::tuple<IdxTs...> & indices,
@@ -1002,6 +1009,29 @@ inline Scalar InterpolationGradientAlongOneDimension(const Scalar * data,
     return Interpolate(data, IndexList<uint,D>(dimensions.reverse()),
                        TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices)) - before;
 }
+
+// In this special case, the dimension along which the interpolation gradient is taken is represented by
+// an integral value. Therefore, we fall back on central difference, in effect averaging the local
+// interpolation slopes in the forward and backward direction.
+template <typename Scalar, int D, int I, typename IndexIType, typename ... IdxTs,
+        typename std::enable_if<std::is_integral<IndexIType>::value, int>::type = 0>
+inline Scalar InterpolationGradientAlongOneDimension(const Scalar * data,
+                                                     const Eigen::Matrix<uint,D,1> & dimensions,
+                                                     const std::tuple<IdxTs...> & indices,
+                                                     const TypeToType<IndexIType> /*indexTypeTag*/,
+                                                     const IntToType<I> /*indexTax*/) {
+
+    std::tuple<IdxTs...> indicesCopy = indices;
+    std::get<I>(indicesCopy)--;
+    const Scalar before = Interpolate(data, IndexList<uint,D>(dimensions.reverse()),
+                                      TupleReverser<std::tuple<IdxTs...> >::Reverse(indicesCopy));
+
+    std::get<I>(indicesCopy) += 2;
+
+    return (Interpolate(data, IndexList<uint,D>(dimensions.reverse()),
+                       TupleReverser<std::tuple<IdxTs...> >::Reverse(indicesCopy)) - before) / 2;
+}
+
 
 template <int D, int I>
 struct InterpolationGradientFiller {

@@ -35,14 +35,13 @@ TEST(InterpolationGradientTest, Test2DVectorValued) {
 
     Eigen::Matrix<float, 2, 2> g = image.InterpolationGradient(0.5f, 0.5);
 
-    ASSERT_NEAR(1.5f, g(0,0), 1e-4);  ASSERT_NEAR(-1.5f, g(0,1), 1e-4);
-    ASSERT_NEAR(3.5f, g(1,0), 1e-4);  ASSERT_NEAR(-3.5f, g(1,1), 1e-4);
-
-    std::cout << g << std::endl;
+    ASSERT_NEAR( 1.5, g(0,0), 1e-4);  ASSERT_NEAR(3.5, g(0,1), 1e-4);
+    ASSERT_NEAR(-1.5, g(1,0), 1e-4);  ASSERT_NEAR(-3.5, g(1,1), 1e-4);
 
     g = image.InterpolationGradient(2, 1.5f);
-
-    std::cout << g << std::endl;
+    
+    ASSERT_NEAR(-3.25, g(0,0), 1e-4);  ASSERT_NEAR( -6.0, g(0,1), 1e-4);
+    ASSERT_NEAR( 3.25, g(1,0), 1e-4);  ASSERT_NEAR(  6.0, g(1,1), 1e-4);
 
 }
 
