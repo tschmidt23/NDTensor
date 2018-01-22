@@ -6,6 +6,7 @@ namespace {
 
 using namespace NDT;
 
+// TODO: fix this test case
 //TEST(InterpolationGradientTest, Test2D) {
 //
 //    float data[] = { 0.0f, 1.0f, 2.0f, 3.0f,
@@ -31,12 +32,37 @@ TEST(InterpolationGradientTest, Test2DVectorValued) {
 
     Image<Eigen::Vector2f> image( { 4, 3}, data);
 
-    std::cout << std::endl;
-
     Eigen::Matrix<float, 2, 2> g = image.InterpolationGradient(0.5f, 0.5);
 
     ASSERT_NEAR( 1.5, g(0,0), 1e-4);  ASSERT_NEAR(3.5, g(0,1), 1e-4);
     ASSERT_NEAR(-1.5, g(1,0), 1e-4);  ASSERT_NEAR(-3.5, g(1,1), 1e-4);
+
+    Eigen::Matrix<float, 2, 2> g2 = image.InterpolationGradient(Eigen::Vector2f(0.5f, 0.5f));
+
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            ASSERT_EQ(g2(i,j), g(i,j));
+        }
+    }
+
+    g = image.InterpolationGradient(0.5f, 1.25f);
+
+    // tx = 0.5
+    // ty = 0.25
+    // 3.0 * (1-tx) * (1-ty) + 5.0 * tx * (1-ty) + 6.0 * (1-tx) * ty + 7.0 * tx * ty
+    // -3.0 * 0.75 + 5.0 * 0.75 - 6.0 * 0.25 + 7.0 * 0.25
+    // -3.0 * 0.5 - 5.0 * 0.5 + 6.0 * 0.5 + 7.0 * 0.5
+
+    ASSERT_NEAR( 1.75, g(0, 0), 1e-4 );  ASSERT_NEAR( 2.5, g(0, 1), 1e-4 );
+    ASSERT_NEAR(-1.75, g(1, 0), 1e-4 );  ASSERT_NEAR(-2.5, g(1, 1), 1e-4 );
+
+    g2 = image.InterpolationGradient(Eigen::Vector2d(0.5, 1.25));
+
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            ASSERT_EQ(g2(i,j), g(i,j));
+        }
+    }
 
     g = image.InterpolationGradient(2, 1.5f);
 
@@ -45,7 +71,7 @@ TEST(InterpolationGradientTest, Test2DVectorValued) {
 
 }
 
-//TEST(InterpolationGradientTest, Test2DVectorValued) {
+//TEST(TransformInterpolationGradientTest, Test2DVectorValued) {
 //
 //    const bool gradientTypeMatch = std::is_same<internal::GradientTraits<Eigen::Vector2f,2>::GradientType,
 //            Eigen::Matrix<float, 2, 2> >::value;

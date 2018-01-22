@@ -1015,13 +1015,13 @@ struct GradientComputer {
 
         GradientType gradient;
         GradientFiller<Diff,Scalar,1,D,0>::fill(gradient,
-                                                                  GradientComputeCore<Diff,TransformValidOnlyInterpolator<Transformer,ValidityCheck>,Scalar,1,D,Eigen::DontAlign | Eigen::RowMajor>(data,
-                                                                                                                                                                             internal::IndexList<uint,D>(dimensions.reverse()),
-                                                                                                                                                                             internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
-                                                                                                                                                                             TransformValidOnlyInterpolator<Transformer,ValidityCheck>(transformer,check)),
-                                                                  data,
-                                                                  internal::IndexList<uint,D>(dimensions.reverse()),
-                                                                  internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices));
+                                                GradientComputeCore<Diff,TransformValidOnlyInterpolator<Transformer,ValidityCheck>,Scalar,1,D,Eigen::DontAlign | Eigen::RowMajor>(data,
+                                                                                                                                                           internal::IndexList<uint,D>(dimensions.reverse()),
+                                                                                                                                                           internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
+                                                                                                                                                           TransformValidOnlyInterpolator<Transformer,ValidityCheck>(transformer,check)),
+                                                data,
+                                                internal::IndexList<uint,D>(dimensions.reverse()),
+                                                internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices));
         return gradient;
 
     }
@@ -1113,10 +1113,17 @@ struct DifferenceTypeTraits<ForwardDifference> {
 };
 
 template <typename Derived, int D>
-struct IsRealVectorType {
+struct IsVectorType {
 
     static constexpr bool Value = Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
-                                  Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
+                                  Eigen::internal::traits<Derived>::ColsAtCompileTime == 1;
+
+};
+
+template <typename Derived, int D>
+struct IsRealVectorType {
+
+    static constexpr bool Value = IsVectorType<Derived,D>::Value &&
                                   std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value;
 
 };
@@ -1124,8 +1131,7 @@ struct IsRealVectorType {
 template <typename Derived, int D>
 struct IsIntegralVectorType {
 
-    static constexpr bool Value = Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
-                                  Eigen::internal::traits<Derived>::ColsAtCompileTime == 1 &&
+    static constexpr bool Value = IsVectorType<Derived,D>::Value &&
                                   std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value;
 
 };
@@ -1572,24 +1578,19 @@ public:
 
     // -=-=-=-=-=-=- interpolation derivative functions -=-=-=-=-=-=-
     template <typename ... IdxTs,
-            typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
+              typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType InterpolationGradient(const IdxTs ... vs) const {
         typename internal::GradientTraits<T,D>::GradientType gradient;
         internal::InterpolationGradientFiller<D, 0>::Fill(data_, dimensions_, std::tuple<IdxTs...>(vs...), gradient);
         return gradient;
-//        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
-//                                     internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(std::tuple<IdxTs...>(vs...)));
     }
 
     template <typename Derived,
-            typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
-                                    Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType InterpolationtGradient(const Eigen::MatrixBase<Derived> & v) const {
+              typename std::enable_if<internal::IsVectorType<Derived,D>::Value, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType InterpolationGradient(const Eigen::MatrixBase<Derived> & v) const {
         typename internal::GradientTraits<T,D>::GradientType gradient;
-        internal::InterpolationGradientFiller<D, 0>::File(data_, dimensions_, VectorToTuple(v));
+        internal::InterpolationGradientFiller<D, 0>::Fill(data_, dimensions_, VectorToTuple(v), gradient);
         return gradient;
-//        return internal::Interpolate(data_, internal::IndexList<DimT,D>(dimensions_.reverse()),
-//                                     VectorToTuple(v.reverse()));
     }
 
     // -=-=-=-=-=-=-  -=-=-=-=-=-=-
