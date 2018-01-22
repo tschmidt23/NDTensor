@@ -24,7 +24,7 @@ struct GradientTraits<Scalar, 1> {
 };
 
 // in the special case of vector-valued data, the gradient is a matrix
-template <typename Scalar, uint VecLength, int Options, uint D>
+template <typename Scalar, int VecLength, int Options, uint D>
 struct GradientTraits<Eigen::Matrix<Scalar,VecLength,1,Options>, D> {
 
     using GradientType = Eigen::Matrix<Scalar,VecLength,D,Options>;
