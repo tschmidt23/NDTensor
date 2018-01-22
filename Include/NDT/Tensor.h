@@ -28,6 +28,9 @@ namespace NDT {
 
 namespace internal {
 
+template <typename T>
+struct TypeToType { };
+
 // -=-=-=- size equivalence checking -=-=-=-
 template <bool Check>
 struct EquivalenceChecker {
@@ -964,26 +967,38 @@ private:
 
 };
 
-//template <typename Scalar, int D, int I, typename IndexType,
-//          typename std::enable_if<std::is_floating_point<IndexType>::value, int>::type = 0>
-//Scalar InterpolationGradientAlongOneDimension(const Scalar * data,
-//                                              const Eigen::Matrix<uint,D,1> & dimensions,
-//                                              const std::tuple<IdxTs...> & indices,
-//                                              const IndexType /*index*/) {
+template <typename Scalar, int D, int I, typename IndexIType, typename ... IdxTs,
+          typename std::enable_if<std::is_floating_point<IndexIType>::value, int>::type = 0>
+inline Scalar InterpolationGradientAlongOneDimension(const Scalar * data,
+                                                     const Eigen::Matrix<uint,D,1> & dimensions,
+                                                     const std::tuple<IdxTs...> & indices,
+                                                     const TypeToType<IndexIType> /*indexTypeTag*/) {
+
+    // Nota bene: this relies on the C++ default rounding, i.e. round-towards-zero. It thus implicitly
+    // assumes that indices will be positive, which should always be the case.
+    typename TupleTypeSubstitute<I, int, IdxTs...>::Type roundedIndices = indices;
+    const Scalar before = Interpolate(data, IndexList<uint,D>(dimensions.reverse()),
+                                      TupleReverser<std::tuple<IdxTs...> >::Reverse(indices));
+    std::get<I>(indices)++;
+    return Interpolate(data, IndexList<uint,D>(dimensions.reverse()),
+                       TupleReverser<std::tuple<IdxTs...> >::Reverse(indices)) - before;
+}
+
+//template <typename Scalar, int D, int I>
+//struct InterpolationGradientFiller {
 //
-//}
-
-template <typename Scalar, int D, int I>
-struct InterpolationGradientFiller {
-
-    template <int Options, int R>
-    __NDT_CUDA_HD_PREFIX__ static inline void Fill(Eigen::Matrix<Scalar, R, D, Options> & gradient) {
-//        gradient.template block<R, 1>(0, I) =
-
-//        InterpolationGradientFill<Scalar, D, I+1>::Fill(gradient);
-    }
-
-};
+//    template <int Options, int R, typename ... IdxTs>
+//    __NDT_CUDA_HD_PREFIX__ static inline void Fill(const Scalar * data,
+//                                                   const Eigen::Matrix<uint,D,1> & dimensions,
+//                                                   std::tuple<IdxTs...> & indices,
+//                                                   Eigen::Matrix<Scalar, R, D, Options> & gradient) {
+//        gradient.template block<R, 1>(0, I) = InterpolationGradientAlongOneDimension(data, dimensions,
+//                                                                                     indices, TypeToType<
+//        )
+////        InterpolationGradientFill<Scalar, D, I+1>::Fill(gradient);
+//    }
+//
+//};
 
 template <DifferenceType Diff, typename Scalar, int R, int D, int I>
 struct GradientFiller {
