@@ -153,6 +153,58 @@ struct TupledType<Scalar, 1> {
 
 };
 
+/*
+ * The TypeListIndex struct allows for extracting the type at a given index in a variadic type list.
+ * For example, TypeListIndex<1,float,int,double>::Type is equivalent to float.
+ */
+template <int I, typename ... TypleTypes>
+struct TypeListIndex;
+
+template <int I, typename HeadType, typename ... TailTypes>
+struct TypeListIndex<I,HeadType,TailTypes...> {
+
+    using Type = typename TypeListIndex<I-1, TailTypes...>::Type;
+
+};
+
+template <typename HeadType, typename ... TailTypes>
+struct TypeListIndex<0,HeadType,TailTypes...> {
+
+    using Type = HeadType;
+
+};
+
+/*
+ * The TupleTypeSubstitute struct allows substituting one of the types in the type list of a tuple.
+ * For example, TupleTypeSubstitute<1,int,float,float,float>::Type is equivalent to
+ * std::tuple<float,int,float>.
+ *
+ * WARNING: will generate compile-time errors if SubsitutionIndex is less than 0 or greater than or
+ * equal to the length of the list.
+ */
+template <int SubstitutionIndex, typename SubstitutionType, typename ...TupleTypes>
+struct TupleTypeSubstitute;
+
+template <int SubstitutionIndex, typename SubstitutionType, typename HeadType, typename ... TailTypes>
+struct TupleTypeSubstitute<SubstitutionIndex,SubstitutionType,HeadType,TailTypes...> {
+
+    using HeadTupleType = std::tuple<HeadType>;
+    using TailTupleType = typename TupleTypeSubstitute<SubstitutionIndex-1, SubstitutionType, TailTypes...>::Type;
+
+    using Type = decltype(std::tuple_cat(std::declval<HeadTupleType>(), std::declval<TailTupleType>()));
+
+};
+
+template <typename SubstitutionType, typename HeadType, typename ... TailTypes>
+struct TupleTypeSubstitute<0,SubstitutionType,HeadType,TailTypes...> {
+
+    using HeadTupleType = std::tuple<SubstitutionType>;
+    using TailTupleType = std::tuple<TailTypes...>;
+
+    using Type = decltype(std::tuple_cat(std::declval<HeadTupleType>(), std::declval<TailTupleType>()));
+
+};
+
 } // namespace internal
 
 template <typename QueryType, typename ... TupleTypes>
