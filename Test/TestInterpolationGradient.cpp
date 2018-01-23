@@ -102,13 +102,13 @@ TEST(TransformInterpolationGradientTest, Test2DVectorValued) {
     ASSERT_NEAR( 1.5, g(0,0), 1e-4);  ASSERT_NEAR(3.5, g(0,1), 1e-4);
     ASSERT_NEAR(-1.5, g(1,0), 1e-4);  ASSERT_NEAR(-3.5, g(1,1), 1e-4);
 
-//    Eigen::Matrix<float, 2, 2> g2 = image.InterpolationGradient(Eigen::Vector2f(0.5f, 0.5f));
-//
-//    for (int i = 0; i < 2; ++i) {
-//        for (int j = 0; j < 2; ++j) {
-//            ASSERT_EQ(g2(i,j), g(i,j));
-//        }
-//    }
+    Eigen::Matrix<float, 2, 2> g2 = image.TransformInterpolationGradient(floater, Eigen::Vector2f(0.5f, 0.5f));
+
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            ASSERT_EQ(g2(i,j), g(i,j));
+        }
+    }
 //
 //    g = image.InterpolationGradient(0.5f, 1.25f);
 //

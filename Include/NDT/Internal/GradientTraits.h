@@ -31,6 +31,14 @@ struct GradientTraits<Eigen::Matrix<Scalar,VecLength,1,Options>, D> {
 
 };
 
+// this special case is needed to prevent multiple partial specialization matches
+template <typename Scalar, int VecLength, int Options>
+struct GradientTraits<Eigen::Matrix<Scalar,VecLength,1,Options>, 1> {
+
+    using GradientType = Eigen::Matrix<Scalar,VecLength,1,Options>;
+
+};
+
 } // namespace internal
 
 } // namespace NDT
