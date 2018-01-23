@@ -52,6 +52,7 @@ install_files(/include/NDT/Internal .h
     Include/NDT/Internal/Copying
     Include/NDT/Internal/GradientTraits
     Include/NDT/Internal/IndexList.h
+    Include/NDT/Internal/Interpolation.h
     Include/NDT/Internal/InterpolationGradient.h
     Include/NDT/Internal/ToType)
 
