@@ -1579,7 +1579,8 @@ public:
     // -=-=-=-=-=-=- interpolation derivative functions -=-=-=-=-=-=-
     template <typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType InterpolationGradient(const IdxTs ... vs) const {
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType
+    InterpolationGradient(const IdxTs ... vs) const {
         typename internal::GradientTraits<T,D>::GradientType gradient;
         internal::InterpolationGradientFiller<D, 0>::Fill(data_, dimensions_, std::tuple<IdxTs...>(vs...), gradient);
         return gradient;
@@ -1587,11 +1588,32 @@ public:
 
     template <typename Derived,
               typename std::enable_if<internal::IsVectorType<Derived,D>::Value, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType InterpolationGradient(const Eigen::MatrixBase<Derived> & v) const {
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType
+    InterpolationGradient(const Eigen::MatrixBase<Derived> & v) const {
         typename internal::GradientTraits<T,D>::GradientType gradient;
         internal::InterpolationGradientFiller<D, 0>::Fill(data_, dimensions_, VectorToTuple(v), gradient);
         return gradient;
     }
+
+    template <typename Transformer, typename ... IdxTs,
+              typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType
+    TransformInterpolationGradient(Transformer transformer,
+                                   const IdxTs ... vs) const {
+        using TransformedType = decltype(transformer(*data_));
+        typename internal::GradientTraits<TransformedType,D>::GradientType gradient;
+        internal::TransformInterpolationGradientFiller<D, 0>::Fill(transformer, data_, dimensions_, std::tuple<IdxTs...>(vs...), gradient);
+        return gradient;
+    }
+
+//    template <typename Derived,
+//            typename std::enable_if<internal::IsVectorType<Derived,D>::Value, int>::type = 0>
+//    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType InterpolationGradient(const Eigen::MatrixBase<Derived> & v) const {
+//        typename internal::GradientTraits<T,D>::GradientType gradient;
+//        internal::InterpolationGradientFiller<D, 0>::Fill(data_, dimensions_, VectorToTuple(v), gradient);
+//        return gradient;
+//    }
+
 
     // -=-=-=-=-=-=-  -=-=-=-=-=-=-
 
