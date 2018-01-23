@@ -168,18 +168,17 @@ inline auto TransformInterpolate(const Scalar * data,
 
 }
 
-template <typename Scalar, typename Transformer, typename ... IdxTs>
+template <typename Scalar, typename Transformer, typename HeadIdxT, typename ... TailIdxTs,
+          typename std::enable_if<std::is_floating_point<HeadIdxT>::value, int>::type = 0>
 __NDT_CUDA_HD_PREFIX__
 inline auto TransformInterpolate(const Scalar * data,
-                                 const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
+                                 const IndexList<uint,sizeof...(TailIdxTs)+1> dimensions,
                                  Transformer transformer,
-                                 const std::tuple<float, IdxTs...> remainingIndices) -> decltype(transformer(*data)) {
+                                 const std::tuple<HeadIdxT, TailIdxTs...> remainingIndices) -> decltype(transformer(*data)) {
 
-//    static constexpr uint Length = sizeof...(IdxTs) + 1;
-
-    const float firstIndex = std::get<0>(remainingIndices);
+    const HeadIdxT firstIndex = std::get<0>(remainingIndices);
     const uint i = firstIndex;
-    const float t = firstIndex - i;
+    const HeadIdxT t = firstIndex - i;
 
     return (1-t)*TransformInterpolate(data + i*dimensions.tail.product(),
                                       dimensions.tail,
@@ -192,16 +191,15 @@ inline auto TransformInterpolate(const Scalar * data,
 
 }
 
-template <typename Scalar, typename Transformer, typename ... IdxTs>
+template <typename Scalar, typename Transformer, typename HeadIdxT, typename ... TailIdxTs,
+          typename std::enable_if<std::is_integral<HeadIdxT>::value, int>::type = 0>
 __NDT_CUDA_HD_PREFIX__
 inline /*auto*/ typename Transformer::ReturnType TransformInterpolate(const Scalar * data,
-                                                                      const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
+                                                                      const IndexList<uint,sizeof...(TailIdxTs)+1> dimensions,
                                                                       Transformer transformer,
-                                                                      const std::tuple<int, IdxTs...> remainingIndices) /*-> decltype(tranformer(*data))*/ {
+                                                                      const std::tuple<HeadIdxT, TailIdxTs...> remainingIndices) /*-> decltype(tranformer(*data))*/ {
 
-//    static constexpr uint Length = sizeof...(IdxTs) + 1;
-
-    const int firstIndex = std::get<0>(remainingIndices);
+    const HeadIdxT firstIndex = std::get<0>(remainingIndices);
 
     return TransformInterpolate(data + firstIndex*dimensions.tail.product(),
                                 dimensions.tail,

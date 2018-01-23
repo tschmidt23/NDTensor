@@ -97,7 +97,7 @@ TEST(TransformInterpolationGradientTest, Test2DVectorValued) {
 //
 //    ASSERT_TRUE(typeMatch);
 //
-    Eigen::Matrix<float, 2, 2> g = image.TransformInterpolationGradient(floater, 0.5f, 0.5f);
+    Eigen::Matrix<float, 2, 2> g = image.TransformInterpolationGradient(floater, 0.5f, 0.5);
 
     ASSERT_NEAR( 1.5, g(0,0), 1e-4);  ASSERT_NEAR(3.5, g(0,1), 1e-4);
     ASSERT_NEAR(-1.5, g(1,0), 1e-4);  ASSERT_NEAR(-3.5, g(1,1), 1e-4);
