@@ -122,7 +122,9 @@ inline auto InterpolationGradientAlongOneDimension(Transformer transformer,
     const TransformedType after = TransformInterpolate(data, IndexList<uint,D>(dimensions.reverse()), transformer,
                                                        TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices));
 
-    return after - before;
+    const TransformedType diff = after - before;
+
+    return diff;
 }
 
 // In this special case, the dimension along which the interpolation gradient is taken is represented by
@@ -153,17 +155,17 @@ inline auto InterpolationGradientAlongOneDimension(Transformer transformer,
 template <int D, int I>
 struct TransformInterpolationGradientFiller {
 
-    template <typename Transformer, typename DataType, int Options, int R, typename ... IdxTs>
+    template <typename Transformer, typename DataType, typename GradientType, typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ static inline void Fill(Transformer transformer,
                                                    const DataType * data,
                                                    const Eigen::Matrix<uint,D,1> & dimensions,
                                                    const std::tuple<IdxTs...> & indices,
-                                                   Eigen::Matrix<decltype(transformer(std::declval<DataType>())), R, D, Options> & gradient) {
-        gradient.template block<R, 1>(0, I) =
+                                                   GradientType & gradient) {
+        gradient.template col(I) =
                 InterpolationGradientAlongOneDimension(transformer, data, dimensions, indices,
                                                        TypeToType<typename TypeListIndex<I,IdxTs...>::Type>(),
                                                        IntToType<I>());
-        InterpolationGradientFiller<D, I+1>::Fill(data, dimensions, indices, gradient);
+        TransformInterpolationGradientFiller<D, I+1>::Fill(transformer, data, dimensions, indices, gradient);
     }
 
 };
@@ -171,12 +173,12 @@ struct TransformInterpolationGradientFiller {
 template <int D>
 struct TransformInterpolationGradientFiller<D,D> {
 
-    template <typename Transformer, typename DataType, int Options, int R, typename ... IdxTs>
+    template <typename Transformer, typename DataType, typename GradientType, typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ static inline void Fill(Transformer transformer,
                                                    const DataType * /*data*/,
                                                    const Eigen::Matrix<uint,D,1> & /*dimensions*/,
                                                    const std::tuple<IdxTs...> & /*indices*/,
-                                                   Eigen::Matrix<decltype(transformer(std::declval<DataType>())), R, D, Options> & /*gradient*/) { }
+                                                   GradientType & /*gradient*/) { }
 
 };
 

@@ -79,8 +79,24 @@ TEST(TransformInterpolationGradientTest, Test2DVectorValued) {
 
     Image<Eigen::Vector2i> image( { 4, 3}, data);
 
-    auto floater = [](const Eigen::Vector2i & v) { return v.cast<float>(); };
+//    struct Floater {
+//
+//        inline Eigen::Vector2f operator()(const Eigen::Vector2i & v) {
+//            return v.cast<float>();
+//        }
+//
+//    };
 
+    auto floater = [](const Eigen::Vector2i & v) { return Eigen::Vector2f(v.cast<float>()); };
+
+//    Eigen::Vector2f vf = floater(Eigen::Vector2i(-1,3));
+
+//    Floater floater;
+
+//    const bool typeMatch = std::is_same<decltype(floater(*data)), Eigen::Vector2f>::value;
+//
+//    ASSERT_TRUE(typeMatch);
+//
     Eigen::Matrix<float, 2, 2> g = image.TransformInterpolationGradient(floater, 0.5f, 0.5f);
 
     ASSERT_NEAR( 1.5, g(0,0), 1e-4);  ASSERT_NEAR(3.5, g(0,1), 1e-4);

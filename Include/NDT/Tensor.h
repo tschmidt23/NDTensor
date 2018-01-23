@@ -1597,7 +1597,7 @@ public:
 
     template <typename Transformer, typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<decltype(std::declval<Transformer>()(std::declval<T>())),D>::GradientType
     TransformInterpolationGradient(Transformer transformer,
                                    const IdxTs ... vs) const {
         using TransformedType = decltype(transformer(*data_));
