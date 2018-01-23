@@ -118,13 +118,8 @@ inline auto InterpolationGradientAlongOneDimension(Transformer transformer,
                                                         TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices));
 
     std::get<I>(roundedIndices)++;
-
-    const TransformedType after = TransformInterpolate(data, IndexList<uint,D>(dimensions.reverse()), transformer,
-                                                       TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices));
-
-    const TransformedType diff = after - before;
-
-    return diff;
+    return TransformInterpolate(data, IndexList<uint,D>(dimensions.reverse()), transformer,
+                                TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices)) - before;
 }
 
 // In this special case, the dimension along which the interpolation gradient is taken is represented by
