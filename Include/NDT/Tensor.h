@@ -657,6 +657,28 @@ struct IndexTypePrinter<float,IdxTs...> {
 
 };
 
+// -=-=-=-=-=-=-=-=-=-=-=- Tensor initializer -=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+template <typename ... ArgTypes>
+struct InitializeDimensions;
+
+template <typename HeadArgType, typename ... TailArgTypes>
+struct InitializeDimensions<HeadArgType, TailArgTypes...> {
+
+    static inline Eigen::Matrix<uint, sizeof...(TailArgTypes), 1> Initialize(HeadArgType head, TailArgTypes ... tails) {
+        return (Eigen::Matrix<uint,sizeof...(TailArgTypes),1>() << head, InitializeDimensions<TailArgTypes...>::Initialize(tails...)).finished();
+    }
+
+};
+
+template <typename HeadArgType, typename TailArgType>
+struct InitializeDimensions<HeadArgType, TailArgType> {
+
+    static inline Eigen::Matrix<uint, 1, 1> Initialize(HeadArgType head, TailArgType tail) {
+        return Eigen::Matrix<uint, 1, 1>(head);
+    }
+
+};
+
 } // namespace internal
 
 template <typename Scalar>
@@ -709,6 +731,18 @@ public:
 //              typename std::enable_if<IsConvertibleToDimensions<Derived>::Value, int>::type = 0>
 //    __NDT_CUDA_HD_PREFIX__ Tensor(const Eigen::MatrixBase<Derived> & dimensions,
 //                                  typename internal::ConstQualifier<T *,Const>::type data) : dimensions_(dimensions), data_(data) { };
+
+//    template <typename ... DimensionTypes,
+//              typename std::enable_if<sizeof...(DimensionTypes) == D, int>::type = 0>
+//    __NDT_CUDA_HD_PREFIX__ Tensor(DimensionTypes ... dimensions,
+//                                  typename internal::ConstQualifier<T *, Const>::type data) : dimensions_(dimensions...),
+//                                                                                              data_(data) {}
+
+    template <typename ... ArgTypes,
+              typename std::enable_if<sizeof...(ArgTypes) == (D+1), int>::type = 0>
+    __NDT_CUDA_HD_PREFIX__ Tensor(ArgTypes ... args)
+            : dimensions_(internal::InitializeDimensions<ArgTypes...>::Initialize(args...)),
+              data_(std::get<D>(std::tuple<ArgTypes...>(args...))) { }
 
     __NDT_CUDA_HD_PREFIX__ Tensor(const Eigen::Matrix<DimT, D, 1> & dimensions,
                                   typename internal::ConstQualifier<T *, Const>::type data) : dimensions_(dimensions),
