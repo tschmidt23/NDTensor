@@ -1314,11 +1314,13 @@ public:
 
     ManagedTensor(ManagedTensor && other)
         : Tensor<D,T,R,false>(other.dimensions_, other.data_) {
+        other.dimensions_ = Eigen::Matrix<DimT,D,1>::Zero();
         other.data_ = nullptr;
     }
 
     ManagedTensor & operator=(ManagedTensor && other) {
         this->dimensions_ = other.dimensions_;
+        other.dimensions_ = Eigen::Matrix<DimT,D,1>::Zero();
         this->data_ = other.data_;
         other.data_ = nullptr;
     }
