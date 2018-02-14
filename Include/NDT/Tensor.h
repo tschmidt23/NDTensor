@@ -1097,6 +1097,24 @@ public:
         return gradient;
     }
 
+    template <typename ValidityChecker, typename ... IdxTs,
+              typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType
+    InterpolateValidOnlyGradient(ValidityChecker validityChecker, const IdxTs ... vs) const {
+        typename internal::GradientTraits<T,D>::GradientType gradient;
+        internal::InterpolateValidOnlyGradientFiller<D, 0>::Fill(validityChecker, data_, dimensions_, std::tuple<IdxTs...>(vs...), gradient);
+        return gradient;
+    }
+
+    template <typename ValidityChecker, typename Derived,
+              typename std::enable_if<internal::IsVectorType<Derived,D>::Value, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType
+    InterpolateValidOnlyGradient(ValidityChecker validityChecker, const Eigen::MatrixBase<Derived> & v) const {
+        typename internal::GradientTraits<T,D>::GradientType gradient;
+        internal::InterpolateValidOnlyGradientFiller<D, 0>::Fill(validityChecker, data_, dimensions_, VectorToTuple(v), gradient);
+        return gradient;
+    }
+
     template <typename Transformer, typename ... IdxTs,
               typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<decltype(std::declval<Transformer>()(std::declval<T>())),D>::GradientType
@@ -1114,6 +1132,26 @@ public:
         using TransformedType = decltype(transformer(*data_));
         typename internal::GradientTraits<TransformedType,D>::GradientType gradient;
         internal::TransformInterpolationGradientFiller<D, 0>::Fill(transformer, data_, dimensions_, VectorToTuple(v), gradient);
+        return gradient;
+    }
+
+    template <typename Transformer, typename ValidityChecker, typename ... IdxTs,
+              typename std::enable_if<sizeof...(IdxTs) == D, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<decltype(std::declval<Transformer>()(std::declval<T>())),D>::GradientType
+    TransformInterpolateValidOnlyGradient(Transformer transformer, ValidityChecker validityChecker, const IdxTs ... vs) const {
+        using TransformedType = decltype(transformer(*data_));
+        typename internal::GradientTraits<TransformedType,D>::GradientType gradient;
+        internal::TransformInterpolateValidOnlyGradientFiller<D, 0>::Fill(transformer, validityChecker, data_, dimensions_, std::tuple<IdxTs...>(vs...), gradient);
+        return gradient;
+    }
+
+    template <typename Transformer, typename ValidityChecker, typename Derived,
+              typename std::enable_if<internal::IsVectorType<Derived,D>::Value, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<decltype(std::declval<Transformer>()(std::declval<T>())),D>::GradientType
+    TransformInterpolationGradient(Transformer transformer, ValidityChecker validityChecker, const Eigen::MatrixBase<Derived> & v) const {
+        using TransformedType = decltype(transformer(*data_));
+        typename internal::GradientTraits<TransformedType,D>::GradientType gradient;
+        internal::TransformInterpolateValidOnlyGradientFiller<D, 0>::Fill(transformer, validityChecker, data_, dimensions_, VectorToTuple(v), gradient);
         return gradient;
     }
 

@@ -97,17 +97,17 @@ struct InterpolationGradientFiller<D,D> {
 // and the gradient is determined by the local linear slope of the interpolation.
 //
 // TODO: this can be made more efficient. Currently, an interpolation gradient in D dimensions samples
-// 2D points (the floor and ceil of each real-valued index). However, because the gradients are linear,
+// 2 * D points (the floor and ceil of each real-valued index). However, because the gradients are linear,
 // the same gradient results when considering the center value and just the floor or the ceil (but not
 // both) along each dimension, requiring only D+1 samples.
 template <typename Transformer, typename Scalar, int D, int I, typename IndexIType, typename ... IdxTs,
-          typename std::enable_if<std::is_floating_point<IndexIType>::value, int>::type = 0>
-inline auto InterpolationGradientAlongOneDimension(Transformer transformer,
-                                                   const Scalar * data,
-                                                   const Eigen::Matrix<uint,D,1> & dimensions,
-                                                   const std::tuple<IdxTs...> & indices,
-                                                   const TypeToType<IndexIType> /*indexTypeTag*/,
-                                                   const IntToType<I> /*indexTag*/) -> decltype(transformer(*data)) {
+        typename std::enable_if<std::is_floating_point<IndexIType>::value, int>::type = 0>
+inline auto TransformInterpolateGradientAlongOneDimension(Transformer transformer,
+                                                          const Scalar * data,
+                                                          const Eigen::Matrix<uint,D,1> & dimensions,
+                                                          const std::tuple<IdxTs...> & indices,
+                                                          const TypeToType<IndexIType> /*indexTypeTag*/,
+                                                          const IntToType<I> /*indexTag*/) -> decltype(transformer(*data)) {
 
     using TransformedType = decltype(transformer(*data));
 
@@ -127,12 +127,12 @@ inline auto InterpolationGradientAlongOneDimension(Transformer transformer,
 // interpolation slopes in the forward and backward direction.
 template <typename Transformer, typename Scalar, int D, int I, typename IndexIType, typename ... IdxTs,
         typename std::enable_if<std::is_integral<IndexIType>::value, int>::type = 0>
-inline auto InterpolationGradientAlongOneDimension(Transformer transformer,
-                                                   const Scalar * data,
-                                                   const Eigen::Matrix<uint,D,1> & dimensions,
-                                                   const std::tuple<IdxTs...> & indices,
-                                                   const TypeToType<IndexIType> /*indexTypeTag*/,
-                                                   const IntToType<I> /*indexTag*/) -> decltype(transformer(*data)) {
+inline auto TransformInterpolateGradientAlongOneDimension(Transformer transformer,
+                                                          const Scalar * data,
+                                                          const Eigen::Matrix<uint,D,1> & dimensions,
+                                                          const std::tuple<IdxTs...> & indices,
+                                                          const TypeToType<IndexIType> /*indexTypeTag*/,
+                                                          const IntToType<I> /*indexTag*/) -> decltype(transformer(*data)) {
 
     using TransformedType = decltype(transformer(*data));
 
@@ -157,9 +157,9 @@ struct TransformInterpolationGradientFiller {
                                                    const std::tuple<IdxTs...> & indices,
                                                    GradientType & gradient) {
         gradient.template col(I) =
-                InterpolationGradientAlongOneDimension(transformer, data, dimensions, indices,
-                                                       TypeToType<typename TypeListIndex<I,IdxTs...>::Type>(),
-                                                       IntToType<I>());
+                TransformInterpolateGradientAlongOneDimension(transformer, data, dimensions, indices,
+                                                              TypeToType<typename TypeListIndex<I,IdxTs...>::Type>(),
+                                                              IntToType<I>());
         TransformInterpolationGradientFiller<D, I+1>::Fill(transformer, data, dimensions, indices, gradient);
     }
 
@@ -176,6 +176,185 @@ struct TransformInterpolationGradientFiller<D,D> {
                                                    GradientType & /*gradient*/) { }
 
 };
+
+
+// In the general case, the dimension along with the gradient is taken is indexed with a real value,
+// and the gradient is determined by the local linear slope of the interpolation.
+//
+// TODO: this can be made more efficient. Currently, an interpolation gradient in D dimensions samples
+// 2D points (the floor and ceil of each real-valued index). However, because the gradients are linear,
+// the same gradient results when considering the center value and just the floor or the ceil (but not
+// both) along each dimension, requiring only D+1 samples.
+template <typename ValidityChecker, typename Scalar, int D, int I, typename IndexIType, typename ... IdxTs,
+          typename std::enable_if<std::is_floating_point<IndexIType>::value, int>::type = 0>
+inline Scalar InterpolateValidOnlyGradientAlongOneDimension(ValidityChecker validityChecker,
+                                                            const Scalar * data,
+                                                            const Eigen::Matrix<uint,D,1> & dimensions,
+                                                            const std::tuple<IdxTs...> & indices,
+                                                            const TypeToType<IndexIType> /*indexTypeTag*/,
+                                                            const IntToType<I> /*indexTag*/) {
+
+    // Nota bene: this relies on the C++ default rounding, i.e. round-towards-zero. It thus implicitly
+    // assumes that indices will be positive, which should always be the case.
+    typename TupleTypeSubstitute<I, int, IdxTs...>::Type roundedIndices = indices;
+    const Scalar before = InterpolateValidOnly(data, IndexList<uint,D>(dimensions.reverse()), validityChecker,
+                                      TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices));
+
+    std::get<I>(roundedIndices)++;
+
+    return InterpolateValidOnly(validityChecker, data, IndexList<uint,D>(dimensions.reverse()),
+                                TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices)) - before;
+}
+
+// In this special case, the dimension along which the interpolation gradient is taken is represented by
+// an integral value. Therefore, we fall back on central difference, in effect averaging the local
+// interpolation slopes in the forward and backward direction.
+template <typename ValidityChecker, typename Scalar, int D, int I, typename IndexIType, typename ... IdxTs,
+          typename std::enable_if<std::is_integral<IndexIType>::value, int>::type = 0>
+inline Scalar InterpolateValidOnlyGradientAlongOneDimension(ValidityChecker validityChecker,
+                                                            const Scalar * data,
+                                                            const Eigen::Matrix<uint,D,1> & dimensions,
+                                                            const std::tuple<IdxTs...> & indices,
+                                                            const TypeToType<IndexIType> /*indexTypeTag*/,
+                                                            const IntToType<I> /*indexTag*/) {
+
+    std::tuple<IdxTs...> indicesCopy = indices;
+    std::get<I>(indicesCopy)--;
+    const Scalar before = InterpolateValidOnly(data, IndexList<uint,D>(dimensions.reverse()), validityChecker,
+                                               TupleReverser<std::tuple<IdxTs...> >::Reverse(indicesCopy));
+
+    std::get<I>(indicesCopy) += 2;
+
+    return (InterpolateValidOnly(validityChecker, data, IndexList<uint,D>(dimensions.reverse()),
+                                 TupleReverser<std::tuple<IdxTs...> >::Reverse(indicesCopy)) - before) / 2;
+
+}
+
+
+template <int D, int I>
+struct InterpolateValidOnlyGradientFiller {
+
+    template <typename ValidityChecker, typename DataType, typename Scalar, int Options, int R, typename ... IdxTs>
+    __NDT_CUDA_HD_PREFIX__ static inline void Fill(ValidityChecker validityChecker,
+                                                   const DataType * data,
+                                                   const Eigen::Matrix<uint,D,1> & dimensions,
+                                                   const std::tuple<IdxTs...> & indices,
+                                                   Eigen::Matrix<Scalar, R, D, Options> & gradient) {
+        gradient.template block<R, 1>(0, I) =
+                InterpolateValidOnlyGradientAlongOneDimension(data, dimensions, indices,
+                                                              TypeToType<typename TypeListIndex<I,IdxTs...>::Type>(),
+                                                              IntToType<I>());
+        InterpolateValidOnlyGradientFiller<D, I+1>::Fill(validityChecker, data, dimensions, indices, gradient);
+    }
+
+};
+
+template <int D>
+struct InterpolateValidOnlyGradientFiller<D,D> {
+
+    template <typename ValidityChecker, typename DataType, typename Scalar, int Options, int R, typename ... IdxTs>
+    __NDT_CUDA_HD_PREFIX__ static inline void Fill(ValidityChecker validityChecker,
+                                                   const DataType * /*data*/,
+                                                   const Eigen::Matrix<uint,D,1> & /*dimensions*/,
+                                                   const std::tuple<IdxTs...> & /*indices*/,
+                                                   Eigen::Matrix<Scalar, R, D, Options> & /*gradient*/) { }
+
+};
+
+
+// In the general case, the dimension along with the gradient is taken is indexed with a real value,
+// and the gradient is determined by the local linear slope of the interpolation.
+//
+// TODO: this can be made more efficient. Currently, an interpolation gradient in D dimensions samples
+// 2 * D points (the floor and ceil of each real-valued index). However, because the gradients are linear,
+// the same gradient results when considering the center value and just the floor or the ceil (but not
+// both) along each dimension, requiring only D+1 samples.
+template <typename Transformer, typename ValidityChecker, typename Scalar, int D, int I, typename IndexIType, typename ... IdxTs,
+        typename std::enable_if<std::is_floating_point<IndexIType>::value, int>::type = 0>
+inline auto TramsformInterpolateValidOnlyGradientAlongOneDimension(Transformer transformer,
+                                                                   ValidityChecker validityChecker,
+                                                                   const Scalar * data,
+                                                                   const Eigen::Matrix<uint,D,1> & dimensions,
+                                                                   const std::tuple<IdxTs...> & indices,
+                                                                   const TypeToType<IndexIType> /*indexTypeTag*/,
+                                                                   const IntToType<I> /*indexTag*/) -> decltype(transformer(*data)) {
+
+    using TransformedType = decltype(transformer(*data));
+
+    // Nota bene: this relies on the C++ default rounding, i.e. round-towards-zero. It thus implicitly
+    // assumes that indices will be positive, which should always be the case.
+    typename TupleTypeSubstitute<I, int, IdxTs...>::Type roundedIndices = indices;
+    const TransformedType before = TransformInterpolateValidOnly(data, IndexList<uint,D>(dimensions.reverse()), transformer, validityChecker,
+                                                                 TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices));
+
+    std::get<I>(roundedIndices)++;
+    return TransformInterpolateValidOnly(data, IndexList<uint,D>(dimensions.reverse()), transformer, validityChecker,
+                                         TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices)) - before;
+
+}
+
+// In this special case, the dimension along which the interpolation gradient is taken is represented by
+// an integral value. Therefore, we fall back on central difference, in effect averaging the local
+// interpolation slopes in the forward and backward direction.
+template <typename Transformer, typename ValidityChecker, typename Scalar, int D, int I, typename IndexIType, typename ... IdxTs,
+        typename std::enable_if<std::is_integral<IndexIType>::value, int>::type = 0>
+inline auto TramsformInterpolateValidOnlyGradientAlongOneDimension(Transformer transformer,
+                                                                   ValidityChecker validityChecker,
+                                                                   const Scalar * data,
+                                                                   const Eigen::Matrix<uint,D,1> & dimensions,
+                                                                   const std::tuple<IdxTs...> & indices,
+                                                                   const TypeToType<IndexIType> /*indexTypeTag*/,
+                                                                   const IntToType<I> /*indexTag*/) -> decltype(transformer(*data)) {
+
+    using TransformedType = decltype(transformer(*data));
+
+    std::tuple<IdxTs...> indicesCopy = indices;
+    std::get<I>(indicesCopy)--;
+    const TransformedType before = TransformInterpolateValidOnly(data, IndexList<uint,D>(dimensions.reverse()), transformer, validityChecker,
+                                                        TupleReverser<std::tuple<IdxTs...> >::Reverse(indicesCopy));
+
+    std::get<I>(indicesCopy) += 2;
+
+    return (TransformInterpolateValidOnly(data, IndexList<uint,D>(dimensions.reverse()), transformer, validityChecker,
+                                          TupleReverser<std::tuple<IdxTs...> >::Reverse(indicesCopy)) - before) / 2;
+}
+
+
+template <int D, int I>
+struct TransformInterpolateValidOnlyGradientFiller {
+
+    template <typename Transformer, typename ValidityChecker, typename DataType, typename GradientType, typename ... IdxTs>
+    __NDT_CUDA_HD_PREFIX__ static inline void Fill(Transformer transformer,
+                                                   ValidityChecker validityChecker,
+                                                   const DataType * data,
+                                                   const Eigen::Matrix<uint,D,1> & dimensions,
+                                                   const std::tuple<IdxTs...> & indices,
+                                                   GradientType & gradient) {
+
+        gradient.template col(I) =
+                TramsformInterpolateValidOnlyGradientAlongOneDimension(transformer, validityChecker, data, dimensions, indices,
+                                                                       TypeToType<typename TypeListIndex<I,IdxTs...>::Type>(),
+                                                                       IntToType<I>());
+        TransformInterpolationGradientFiller<D, I+1>::Fill(transformer, validityChecker, data, dimensions, indices, gradient);
+
+    }
+
+};
+
+
+template <int D>
+struct TransformInterpolateValidOnlyGradientFiller<D,D> {
+
+    template <typename Transformer, typename ValidityChecker, typename DataType, typename GradientType, typename ... IdxTs>
+    __NDT_CUDA_HD_PREFIX__ static inline void Fill(Transformer /*transformer*/,
+                                                   ValidityChecker /*validityChecker*/,
+                                                   const DataType * /*data*/,
+                                                   const Eigen::Matrix<uint,D,1> & /*dimensions*/,
+                                                   const std::tuple<IdxTs...> & /*indices*/,
+                                                   GradientType & /*gradient*/) { }
+
+};
+
 
 } // namespace internal
 
