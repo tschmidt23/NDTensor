@@ -202,7 +202,7 @@ inline Scalar InterpolateValidOnlyGradientAlongOneDimension(ValidityChecker vali
 
     std::get<I>(roundedIndices)++;
 
-    return InterpolateValidOnly(validityChecker, data, IndexList<uint,D>(dimensions.reverse()),
+    return InterpolateValidOnly(data, IndexList<uint,D>(dimensions.reverse()), validityChecker,
                                 TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices)) - before;
 }
 
@@ -241,7 +241,7 @@ struct InterpolateValidOnlyGradientFiller {
                                                    const std::tuple<IdxTs...> & indices,
                                                    Eigen::Matrix<Scalar, R, D, Options> & gradient) {
         gradient.template block<R, 1>(0, I) =
-                InterpolateValidOnlyGradientAlongOneDimension(data, dimensions, indices,
+                InterpolateValidOnlyGradientAlongOneDimension(validityChecker, data, dimensions, indices,
                                                               TypeToType<typename TypeListIndex<I,IdxTs...>::Type>(),
                                                               IntToType<I>());
         InterpolateValidOnlyGradientFiller<D, I+1>::Fill(validityChecker, data, dimensions, indices, gradient);
