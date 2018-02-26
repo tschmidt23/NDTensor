@@ -61,6 +61,31 @@ inline Scalar InterpolationGradientAlongOneDimension(const Scalar * data,
                         TupleReverser<std::tuple<IdxTs...> >::Reverse(indicesCopy)) - before) / 2;
 }
 
+template <typename Scalar, int R, int D, int Options, int I>
+struct GradientInserter {
+
+    __NDT_CUDA_HD_PREFIX__
+    inline static void InsertGradient(Eigen::Matrix<Scalar, R, D, Options> & gradient,
+                                      const Eigen::Matrix<Scalar, R, 1> & insert) {
+
+        gradient.col(I) = insert;
+
+    }
+
+};
+
+template <typename Scalar, int D, int Options, int I>
+struct GradientInserter<Scalar,1,D,Options,I> {
+
+    __NDT_CUDA_HD_PREFIX__
+    inline static void InsertGradient(Eigen::Matrix<Scalar, 1, D, Options> & gradient,
+                                      const Scalar insert) {
+
+        gradient(I) = insert;
+
+    }
+
+};
 
 template <int D, int I>
 struct InterpolationGradientFiller {
@@ -70,10 +95,11 @@ struct InterpolationGradientFiller {
                                                    const Eigen::Matrix<uint,D,1> & dimensions,
                                                    const std::tuple<IdxTs...> & indices,
                                                    Eigen::Matrix<Scalar, R, D, Options> & gradient) {
-        gradient.template block<R, 1>(0, I) =
+
+        GradientInserter<Scalar, R, D, Options, I>::InsertGradient(gradient,
                 InterpolationGradientAlongOneDimension(data, dimensions, indices,
                                                        TypeToType<typename TypeListIndex<I,IdxTs...>::Type>(),
-                                                       IntToType<I>());
+                                                       IntToType<I>()));
         InterpolationGradientFiller<D, I+1>::Fill(data, dimensions, indices, gradient);
     }
 
