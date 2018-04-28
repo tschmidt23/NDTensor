@@ -90,13 +90,17 @@ template <typename T>
 struct AutomaticAllocator<T,DeviceResident> {
 
     inline static T * allocate(const std::size_t length) {
+
         T * vals;
         cudaMalloc(&vals,length*sizeof(T));
+
         return vals;
     }
 
     inline static void deallocate(T * vec) {
+
         cudaFree(vec);
+
     }
 
 };
@@ -755,6 +759,10 @@ public:
     template <int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
     __NDT_CUDA_HD_PREFIX__ Tensor(const DimT length, typename internal::ConstQualifier<T *, Const>::type data) :
             dimensions_(Eigen::Matrix<DimT, D, 1>(length)), data_(data) {}
+
+    template <int D2=D, typename std::enable_if<D2==1 && R == HostResident, int>::type = 0>
+    __NDT_CUDA_HD_PREFIX__ Tensor(typename internal::ConstQualifier<std::vector<T> &, Const>::type vector) :
+            dimensions_(Eigen::Matrix<DimT, D, 1>(vector.size())), data_(vector.data()) {}
 
     // copy constructor and assignment operator, not valid for managed or const tensors
     template <bool _Const>
