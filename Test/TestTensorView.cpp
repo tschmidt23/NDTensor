@@ -63,7 +63,7 @@ TEST(TensorViewTest, Test2D) {
     EXPECT_EQ(4, row(1));
     EXPECT_EQ(5, row(2));
 
-    VectorView<float> col = tensor.Slice<0>(1);
+    ConstVectorView<float> col = static_cast<const Image<float> &>(tensor).Slice<0>(1);
 
     EXPECT_EQ(3, col.DimensionSize(0));
 
@@ -100,7 +100,7 @@ TEST(TensorViewTest, Test3D) {
     EXPECT_EQ(11, tensorView(1,1,1));
 
     // Test Slice
-    ImageView<float> plane = tensor.Slice<1>(1);
+    const ImageView<float> plane = tensor.Slice<1>(1);
 
     EXPECT_EQ(3, plane.DimensionSize(0));
     EXPECT_EQ(3, plane.DimensionSize(1));
@@ -109,6 +109,15 @@ TEST(TensorViewTest, Test3D) {
     EXPECT_EQ(5, plane(2, 0));
     EXPECT_EQ(9, plane(0, 1));
     EXPECT_EQ(16,plane(2, 2));
+
+    // Test double slice
+    ConstVectorView<float> vec = plane.Slice<0>(1);
+
+    EXPECT_EQ(3, vec.DimensionSize(0));
+
+    EXPECT_EQ(4, vec(0));
+    EXPECT_EQ(10, vec(1));
+    EXPECT_EQ(15, vec(2));
 
 }
 

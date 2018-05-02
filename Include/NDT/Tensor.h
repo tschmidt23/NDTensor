@@ -814,14 +814,6 @@ private:
 
     // -=-=-=-=-=-=- slicing function -=-=-=-=-=-=-
 public:
-    template <int Axis>
-    inline TensorView<D-1, T, R, Const> Slice(const IdxT slice) {
-        return TensorView<D-1, T, R, Const>(
-                Tensor<D-1, T, R, Const>(internal::AxisDropper<D, Axis>::Drop(dimensions_),
-                &(*this)(internal::AxisEmplacer<D, Axis>::Emplace(slice))),
-                internal::AxisDropper<D, Axis>::Drop(this->Strides())
-        );
-    };
 
     // -=-=-=-=-=-=- subtensor functions -=-=-=-=-=-=-
     template <int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
@@ -1397,6 +1389,10 @@ struct TensorTraits<Tensor<D_, T_, R_, Const_> > {
     using T = T_;
     static constexpr Residency R = R_;
     static constexpr bool Const = Const_;
+    using SliceT = TensorView<D-1, T, R, Const>;
+    using SliceTensorT = Tensor<D-1, T, R, Const>;
+    using ConstSliceT = TensorView<D-1, T, R, true>;
+    using ConstSliceTensorT = Tensor<D-1, T, R, true>;
 };
 
 // -=-=-=-=- full tensor typedefs -=-=-=-=-

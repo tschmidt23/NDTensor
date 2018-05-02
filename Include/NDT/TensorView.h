@@ -92,6 +92,10 @@ struct TensorTraits<TensorView<D_, T_, R_, Const_> > {
     using T = T_;
     static constexpr Residency R = R_;
     static constexpr bool Const = Const_;
+    using SliceT = TensorView<D-1, T, R, Const>;
+    using SliceTensorT = Tensor<D-1, T, R, Const>;
+    using ConstSliceT = TensorView<D-1, T, R, true>;
+    using ConstSliceTensorT = Tensor<D-1, T, R, true>;
 };
 
 // -=-=-=-=- typedefs -=-=-=-=-

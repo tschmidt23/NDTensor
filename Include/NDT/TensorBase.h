@@ -7,6 +7,8 @@
 #define __NDT_CUDA_HD_PREFIX__
 #endif // __NDT_NO_CUDA__
 
+#include <NDT/Internal/Slicing.h>
+
 namespace NDT {
 
 template <typename Derived>
@@ -57,6 +59,26 @@ public:
     inline __NDT_CUDA_HD_PREFIX__ Eigen::Matrix<DimT, D, 1, Eigen::DontAlign> Strides() const {
         return static_cast<const Derived *>(this)->StridesImpl();
     }
+
+    template <int Axis>
+    inline typename TensorTraits<Derived>::SliceT Slice(const IdxT slice) {
+        return typename TensorTraits<Derived>::SliceT(
+                typename TensorTraits<Derived>::SliceTensorT(
+                        internal::AxisDropper<D, Axis>::Drop(Dimensions()),
+                        &(*this)(internal::AxisEmplacer<D, Axis>::Emplace(slice))),
+                internal::AxisDropper<D, Axis>::Drop(this->Strides())
+        );
+    };
+
+    template <int Axis>
+    inline typename TensorTraits<Derived>::ConstSliceT Slice(const IdxT slice) const {
+        return typename TensorTraits<Derived>::ConstSliceT(
+                typename TensorTraits<Derived>::ConstSliceTensorT(
+                        internal::AxisDropper<D, Axis>::Drop(Dimensions()),
+                        &(*this)(internal::AxisEmplacer<D, Axis>::Emplace(slice))),
+                internal::AxisDropper<D, Axis>::Drop(this->Strides())
+        );
+    };
 
     // -=-=-=-=-=-=- conversion to base -=-=-=-=-=-=-
     inline Derived & Downcast() {
