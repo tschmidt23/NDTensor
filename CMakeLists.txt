@@ -37,24 +37,7 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/NDTensorConfig.cmake.in
                 ${CMAKE_CURRENT_BINARY_DIR}/NDTensorConfig.cmake
                 @ONLY ESCAPE_QUOTES)
 
-#TODO: automate this to replicate file structure
-
-# install extern-facing includes
-install_files(/include/NDT .h
-	Include/NDT/TensorBase 
-	Include/NDT/Tensor
-	Include/NDT/TensorView
-	Include/NDT/TupleHelpers)
-
-#install internal files
-install_files(/include/NDT/Internal .h
-    Include/NDT/Internal/ConstQualifier
-    Include/NDT/Internal/Copying
-    Include/NDT/Internal/GradientTraits
-    Include/NDT/Internal/IndexList.h
-    Include/NDT/Internal/Interpolation.h
-    Include/NDT/Internal/InterpolationGradient.h
-    Include/NDT/Internal/ToType)
+install(DIRECTORY Include/ DESTINATION include)
 
 #install cmake config
 install_files(/share/NDT .cmake NDTensorConfig)
