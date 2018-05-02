@@ -14,6 +14,7 @@
 #include <NDT/Internal/IndexList.h>
 #include <NDT/Internal/Interpolation.h>
 #include <NDT/Internal/InterpolationGradient.h>
+#include <NDT/Internal/Slicing.h>
 
 namespace NDT {
 
@@ -608,30 +609,6 @@ struct IsIntegralVectorType {
 
 };
 
-template <uint D>
-struct StrideConstructor {
-
-    static inline Eigen::Matrix<uint,D,1,Eigen::DontAlign>
-    Construct(const uint soFar, const Eigen::Matrix<uint,D,1,Eigen::DontAlign> & dimensions) {
-
-        return (Eigen::Matrix<uint,D,1,Eigen::DontAlign>() << soFar, StrideConstructor<D-1>::Construct(soFar * dimensions(0), dimensions.template tail<D-1>())).finished();
-
-    }
-
-};
-
-template <>
-struct StrideConstructor<1> {
-
-    static inline Eigen::Matrix<uint,1,1,Eigen::DontAlign>
-    Construct(const uint soFar, const Eigen::Matrix<uint,1,1,Eigen::DontAlign> & /*dimensions*/) {
-
-        return Eigen::Matrix<uint,1,1,Eigen::DontAlign>(soFar);
-
-    }
-
-};
-
 template <typename ... IdxTs>
 struct IndexTypePrinter {
 
@@ -834,7 +811,17 @@ public:
         return internal::StrideConstructor<D>::Construct(1, dimensions_);
     }
 
-    // -=-=-=-=-=-=- slicing functions -=-=-=-=-=-=-
+    // -=-=-=-=-=-=- slicing function -=-=-=-=-=-=-
+    template <int Axis>
+    inline TensorView<D-1, T, R, Const> Slice(const IdxT slice) {
+        return TensorView<D-1, T, R, Const>(
+                Tensor<D-1, T, R, Const>(internal::AxisDropper<D, Axis>::Drop(dimensions_),
+                &(*this)(internal::AxisEmplacer<D, Axis>::Emplace(slice))),
+                internal::AxisDropper<D, Axis>::Drop(Strides())
+        );
+    };
+
+    // -=-=-=-=-=-=- subtensor functions -=-=-=-=-=-=-
     template <int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
     inline TensorView<D, T, R, Const> SubTensor(const IdxT start0, const DimT size0) {
         return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>(size0, data_ + start0), Strides());
