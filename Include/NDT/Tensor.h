@@ -1462,7 +1462,7 @@ __NDT_TENSOR_PARTIAL_TYPEDEF__(3);
 __NDT_TENSOR_PARTIAL_TYPEDEF__(4);
 __NDT_TENSOR_PARTIAL_TYPEDEF__(5);
 
-#define __NDT_DIMENSIONAL_ALIAS__(dimension,alias) \
+#define __NDT_TENSOR_DIMENSIONAL_ALIAS__(dimension, alias) \
     template <typename Scalar> \
     using alias = HostTensor##dimension<Scalar>; \
     \
@@ -1481,9 +1481,9 @@ __NDT_TENSOR_PARTIAL_TYPEDEF__(5);
     template <typename Scalar> \
     using ConstDevice##alias = ConstDeviceTensor##dimension<Scalar>
 
-__NDT_DIMENSIONAL_ALIAS__(1,Vector);
-__NDT_DIMENSIONAL_ALIAS__(2,Image);
-__NDT_DIMENSIONAL_ALIAS__(3,Volume);
+__NDT_TENSOR_DIMENSIONAL_ALIAS__(1,Vector);
+__NDT_TENSOR_DIMENSIONAL_ALIAS__(2,Image);
+__NDT_TENSOR_DIMENSIONAL_ALIAS__(3,Volume);
 
 
 } // namespace NDT

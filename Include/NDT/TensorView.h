@@ -100,6 +100,24 @@ __NDT_TENSOR_VIEW_TYPEDEFS__(int,i);
 __NDT_TENSOR_VIEW_TYPEDEFS__(unsigned int,ui);
 __NDT_TENSOR_VIEW_TYPEDEFS__(unsigned char,uc);
 
+#define __NDT_TENSOR_VIEW_DIMENSIONAL_ALIAS__(dimension, alias) \
+    template <typename Scalar> \
+    using alias##View = TensorView<dimension,Scalar,HostResident>; \
+    \
+    template <typename Scalar> \
+    using Device##alias##View = TensorView<dimension,Scalar,DeviceResident>; \
+    \
+    template <typename Scalar> \
+    using Const##alias##View = TensorView<dimension,Scalar,HostResident,true>; \
+    \
+    template <typename Scalar> \
+    using ConstDevice##alias##View = TensorView<dimension,Scalar,DeviceResident,true>
+
+
+__NDT_TENSOR_VIEW_DIMENSIONAL_ALIAS__(1,Vector);
+__NDT_TENSOR_VIEW_DIMENSIONAL_ALIAS__(2,Image);
+__NDT_TENSOR_VIEW_DIMENSIONAL_ALIAS__(1,Volume);
+
 
 
 } // namespace NDT
