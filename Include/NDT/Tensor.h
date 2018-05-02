@@ -836,52 +836,52 @@ public:
 
     // -=-=-=-=-=-=- slicing functions -=-=-=-=-=-=-
     template <int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
-    inline TensorView<D, T, R, Const> Slice(const IdxT start0, const DimT size0) {
+    inline TensorView<D, T, R, Const> SubTensor(const IdxT start0, const DimT size0) {
         return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>(size0, data_ + start0), Strides());
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 1, int>::type = 0>
-    inline TensorView<D, T, R, true> Slice(const IdxT start0, const DimT size0) const {
+    inline TensorView<D, T, R, true> SubTensor(const IdxT start0, const DimT size0) const {
         return TensorView<D, T, R, true>(Tensor<D, T, R, true>(size0, data_ + start0), Strides());
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
-    inline TensorView<D, T, R, Const> Slice(const IdxT start0, const IdxT start1, const DimT size0, const DimT size1) {
+    inline TensorView<D, T, R, Const> SubTensor(const IdxT start0, const IdxT start1, const DimT size0, const DimT size1) {
         return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>({size0, size1}, &(*this)(start0, start1)), Strides());
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
     inline TensorView<D, T, R, true>
-    Slice(const IdxT start0, const IdxT start1, const DimT size0, const DimT size1) const {
+    SubTensor(const IdxT start0, const IdxT start1, const DimT size0, const DimT size1) const {
         return TensorView<D, T, R, true>(Tensor<D, T, R, true>({size0, size1}, &(*this)(start0, start1)), Strides());
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
-    inline TensorView<D, T, R, Const> Slice(const IdxT start0, const IdxT start1, const IdxT start2,
+    inline TensorView<D, T, R, Const> SubTensor(const IdxT start0, const IdxT start1, const IdxT start2,
                                             const DimT size0, const DimT size1, const DimT size2) {
         return TensorView<D, T, R, Const>(
                 Tensor<D, T, R, Const>({size0, size1, size2}, &(*this)(start0, start1, start2)), Strides());
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 3, int>::type = 0>
-    inline TensorView<D, T, R, true> Slice(const IdxT start0, const IdxT start1, const IdxT start2,
-                                           const DimT size0, const DimT size1, const DimT size2) const {
+    inline TensorView<D, T, R, true> SubTensor(const IdxT start0, const IdxT start1, const IdxT start2,
+                                               const DimT size0, const DimT size1, const DimT size2) const {
         return TensorView<D, T, R, true>(Tensor<D, T, R, true>({size0, size1, size2}, &(*this)(start0, start1, start2)),
                                          Strides());
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
-    inline TensorView<D, T, R, Const> Slice(const IdxT start0, const IdxT start1, const IdxT start2, const IdxT start3,
-                                            const DimT size0, const DimT size1, const DimT size2, const DimT size3) {
+    inline TensorView<D, T, R, Const> SubTensor(const IdxT start0, const IdxT start1, const IdxT start2, const IdxT start3,
+                                                const DimT size0, const DimT size1, const DimT size2, const DimT size3) {
         return TensorView<D, T, R, Const>(
                 Tensor<D, T, R, Const>({size0, size1, size2, size3}, &(*this)(start0, start1, start2, start3)),
                 Strides());
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
-    inline TensorView<D, T, R, true> Slice(const IdxT start0, const IdxT start1, const IdxT start2, const IdxT start3,
-                                           const DimT size0, const DimT size1, const DimT size2,
-                                           const DimT size3) const {
+    inline TensorView<D, T, R, true> SubTensor(const IdxT start0, const IdxT start1, const IdxT start2, const IdxT start3,
+                                               const DimT size0, const DimT size1, const DimT size2,
+                                               const DimT size3) const {
         return TensorView<D, T, R, true>(
                 Tensor<D, T, R, true>({size0, size1, size2, size3}, &(*this)(start0, start1, start2, start3)),
                 Strides());
@@ -890,26 +890,26 @@ public:
     template <typename DerivedStart, typename DerivedSize,
               typename std::enable_if<internal::IsIntegralVectorType<DerivedStart,D>::Value &&
                                       internal::IsIntegralVectorType<DerivedSize,D>::Value, int>::type = 0>
-    inline TensorView<D, T, R, Const> Slice(const Eigen::MatrixBase<DerivedStart> & start, const Eigen::MatrixBase<DerivedSize> & size) {
+    inline TensorView<D, T, R, Const> SubTensor(const Eigen::MatrixBase<DerivedStart> & start, const Eigen::MatrixBase<DerivedSize> & size) {
         return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>(size, &this->Element(start)), Strides());
     }
 
     template <typename DerivedStart, typename DerivedSize,
             typename std::enable_if<internal::IsIntegralVectorType<DerivedStart,D>::Value &&
                                     internal::IsIntegralVectorType<DerivedSize,D>::Value, int>::type = 0>
-    inline TensorView<D, T, R, true> Slice(const Eigen::MatrixBase<DerivedStart> & start, const Eigen::MatrixBase<DerivedSize> & size) const {
+    inline TensorView<D, T, R, true> SubTensor(const Eigen::MatrixBase<DerivedStart> & start, const Eigen::MatrixBase<DerivedSize> & size) const {
         return TensorView<D, T, R, true>(Tensor<D, T, R, true>(size, &this->Element(start)), Strides());
     }
 
     template <typename StartT = DimT, typename SizeT = DimT, int Options = 0, int D2 = D,
               typename std::enable_if<D2 == D && std::is_integral<SizeT>::value && std::is_integral<StartT>::value, int>::type = 0>
-    inline TensorView<D, T, R, Const> Slice(const Eigen::Matrix<StartT, D2, 1, Options> & start, const Eigen::Matrix<SizeT, D2, 1, Options> & size) {
+    inline TensorView<D, T, R, Const> SubTensor(const Eigen::Matrix<StartT, D2, 1, Options> & start, const Eigen::Matrix<SizeT, D2, 1, Options> & size) {
         return TensorView<D, T, R, Const>(Tensor<D, T, R, Const>(size, &this->Element(start)), Strides());
     }
 
     template <typename StartT = DimT, typename SizeT = DimT, int Options = 0, int D2 = D,
               typename std::enable_if<D2 == D && std::is_integral<SizeT>::value && std::is_integral<StartT>::value, int>::type = 0>
-    inline TensorView<D, T, R, true> Slice(const Eigen::Matrix<StartT, D2, 1, Options> & start, const Eigen::Matrix<SizeT, D2, 1, Options> & size) const {
+    inline TensorView<D, T, R, true> SubTensor(const Eigen::Matrix<StartT, D2, 1, Options> & start, const Eigen::Matrix<SizeT, D2, 1, Options> & size) const {
         return TensorView<D, T, R, true>(Tensor<D, T, R, true>(size, &this->Element(start)), Strides());
     }
 

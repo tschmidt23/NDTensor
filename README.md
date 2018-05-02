@@ -68,7 +68,7 @@ Normal rules for element access on host / device apply, i.e. host memory can onl
 
 ### Slicing and Tensor Views
 
-The `Tensor` class assumes packed memory, such that the stride of the first dimension is the size of one element and the total size of the memory referenced is the product of the dimensions times the size of one element. The `TensorView` class, on the other hand, decouples the stride and dimensions of the tensor. A `TensorView` is created using the `Slice` member function of the `Tensor` class.
+The `Tensor` class assumes packed memory, such that the stride of the first dimension is the size of one element and the total size of the memory referenced is the product of the dimensions times the size of one element. The `TensorView` class, on the other hand, decouples the stride and dimensions of the tensor. A `TensorView` is created using the `SubTensor` member function of the `Tensor` class.
 
 ```
 float data[16] = {  0,  1,  2,  3,

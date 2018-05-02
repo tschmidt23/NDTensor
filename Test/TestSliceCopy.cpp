@@ -13,7 +13,7 @@ TEST(TensorSliceCopyTest, Test2D) {
 
     Tensor<2, float, HostResident> tensor({3, 3}, data);
 
-    TensorView<2, float, HostResident> tensorView = tensor.Slice({1,1},{2,2});
+    TensorView<2, float, HostResident> tensorView = tensor.SubTensor({1,1},{2,2});
 
     ManagedTensor<2, float, HostResident> tensorCopy({2, 2});
 
@@ -24,9 +24,9 @@ TEST(TensorSliceCopyTest, Test2D) {
     EXPECT_EQ(7, tensorCopy(0,1));
     EXPECT_EQ(8, tensorCopy(1,1));
 
-    TensorView<2, float, HostResident> tensorView2 = tensorCopy.Slice({0,1}, {2, 1});
+    TensorView<2, float, HostResident> tensorView2 = tensorCopy.SubTensor({0,1}, {2, 1});
 
-    TensorView<2, float, HostResident> tensorView3 = tensor.Slice({0,0}, {2, 1});
+    TensorView<2, float, HostResident> tensorView3 = tensor.SubTensor({0,0}, {2, 1});
 
     tensorView3.CopyFrom(tensorView2);
 
