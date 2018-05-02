@@ -91,12 +91,12 @@ NDT::ManagedVector<float> smallerVector(2);
 smallerVector(0) = 3.f;
 smallerVector(1) = 4.f;
 
-vector.Slice( 3, 2 ).CopyFrom(smallerVector);
+vector.SubTensor( 3, 2 ).CopyFrom(smallerVector);
 
 NDT::ManagedImage<int> image({100,100});
 NDT::ManagedImage<int> patch({10,10});
 
-patch.CopyFrom(image.Slice(17, 25,  10, 10));
+patch.CopyFrom(image.SubTensor(17, 25,  10, 10));
 
 
 ```
