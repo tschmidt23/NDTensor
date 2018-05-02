@@ -76,6 +76,10 @@ private:
         return tensor_.Dimensions();
     }
 
+    inline __NDT_CUDA_HD_PREFIX__ Eigen::Matrix<DimT, D, 1, Eigen::DontAlign> StridesImpl() const {
+        return strides_;
+    }
+
     Tensor<D, T, R, Const> tensor_;
     Eigen::Matrix<DimT,D,1,Eigen::DontAlign> strides_;
 

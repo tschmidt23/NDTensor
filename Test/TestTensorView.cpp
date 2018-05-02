@@ -109,7 +109,7 @@ TEST(TensorViewTest, Test3D) {
     EXPECT_EQ(5, plane(2, 0));
     EXPECT_EQ(9, plane(0, 1));
     EXPECT_EQ(16,plane(2, 2));
-    
+
 }
 
 } // namespace

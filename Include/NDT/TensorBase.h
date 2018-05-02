@@ -28,7 +28,7 @@ public:
         return static_cast<const Derived *>(this)->DimensionSizeImpl(dim);
     }
 
-    inline __NDT_CUDA_HD_PREFIX__ const Eigen::Matrix<DimT,D,1,Eigen::DontAlign> & Dimensions() const {
+    inline __NDT_CUDA_HD_PREFIX__ const Eigen::Matrix<DimT, D, 1, Eigen::DontAlign> & Dimensions() const {
         return static_cast<const Derived *>(this)->DimensionsImpl();
     }
 
@@ -53,6 +53,11 @@ public:
 //        return static_cast<Derived *>(this)->Element(d0);
 //    }
 
+    // TODO: should this be exposed?
+    inline __NDT_CUDA_HD_PREFIX__ Eigen::Matrix<DimT, D, 1, Eigen::DontAlign> Strides() const {
+        return static_cast<const Derived *>(this)->StridesImpl();
+    }
+
     // -=-=-=-=-=-=- conversion to base -=-=-=-=-=-=-
     inline Derived & Downcast() {
         return static_cast<Derived &>(*this);
@@ -62,7 +67,9 @@ public:
         return static_cast<const Derived &>(*this);
     }
 
+
 protected:
+
 
     TensorBase() = default;
     TensorBase(const TensorBase<Derived> &) = default;
