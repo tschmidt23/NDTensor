@@ -148,11 +148,11 @@ __NDT_CUDA_HD_PREFIX__ inline Scalar InterpolateValidOnly(const Scalar * data,
     const Scalar totalValue = InterpolateValidOnly(data,dimensions,totalWeight, 1.f,
                                                    check, indices);
 
-    if (totalWeight) {
+//    if (totalWeight) {
         return totalValue / totalWeight;
-    }
+//    }
 
-    return 0 * totalValue;
+//    return 0 * totalValue;
 }
 
 
