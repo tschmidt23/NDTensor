@@ -34,6 +34,16 @@ public:
         return static_cast<const Derived *>(this)->DimensionsImpl();
     }
 
+    // -=-=-=-=-=-=- data functions -=-=-=-=-=-=-
+    template <typename U = T, typename std::enable_if<!Const && sizeof(U), int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ T * Data() {
+        return static_cast<Derived *>(this)->DataImpl();
+    }
+
+    inline __NDT_CUDA_HD_PREFIX__ const T * Data() const {
+        return static_cast<const Derived *>(this)->DataImpl();
+    }
+
     // -=-=-=-=-=-=- indexing functions -=-=-=-=-=-=-
     template <typename ... ArgTs>
     inline __NDT_CUDA_HD_PREFIX__ const T & operator()(const ArgTs ... args) const {

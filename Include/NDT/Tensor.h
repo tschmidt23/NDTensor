@@ -763,19 +763,27 @@ public:
     // conversion to const tensor
     template <bool _Const = Const, typename std::enable_if<!_Const, int>::type = 0>
     inline operator Tensor<D, T, R, true>() const {
-        return Tensor<D, T, R, true>(this->Dimensions(), Data());
+        return Tensor<D, T, R, true>(this->Dimensions(), this->Data());
     }
 
-    template <typename U = T,
-            typename std::enable_if<!Const && sizeof(U), int>::type = 0>
-    inline __NDT_CUDA_HD_PREFIX__ T * Data() { return data_; }
-
-    inline __NDT_CUDA_HD_PREFIX__ const T * Data() const { return data_; }
+//    template <typename U = T,
+//            typename std::enable_if<!Const && sizeof(U), int>::type = 0>
+//    inline __NDT_CUDA_HD_PREFIX__ T * Data() { return data_; }
+//
+//    inline __NDT_CUDA_HD_PREFIX__ const T * Data() const { return data_; }
 
     // -=-=-=-=-=-=- sizing functions -=-=-=-=-=-=-
 private:
     inline __NDT_CUDA_HD_PREFIX__ DimT DimensionSizeImpl(const IdxT dim) const {
         return dimensions_(dim);
+    }
+
+    inline __NDT_CUDA_HD_PREFIX__ T * DataImpl() {
+        return data_;
+    }
+
+    inline __NDT_CUDA_HD_PREFIX__ const T * DataImpl() const {
+        return data_;
     }
 
     inline __NDT_CUDA_HD_PREFIX__ const Eigen::Matrix<DimT, D, 1, Eigen::DontAlign> & DimensionsImpl() const {

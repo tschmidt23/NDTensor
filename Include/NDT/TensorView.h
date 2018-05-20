@@ -72,6 +72,14 @@ private:
         return tensor_.DimensionSize(dim);
     }
 
+    inline __NDT_CUDA_HD_PREFIX__ T * DataImpl() {
+        return tensor_.Data();
+    }
+
+    inline __NDT_CUDA_HD_PREFIX__ const T * DataImpl() const {
+        return tensor_.Data();
+    }
+
     inline __NDT_CUDA_HD_PREFIX__ const Eigen::Matrix<DimT,D,1,Eigen::DontAlign> & DimensionsImpl() const {
         return tensor_.Dimensions();
     }
