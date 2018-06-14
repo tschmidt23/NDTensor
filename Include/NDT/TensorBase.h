@@ -78,7 +78,7 @@ public:
                         &(*this)(internal::AxisEmplacer<D, Axis>::Emplace(slice))),
                 internal::AxisDropper<D, Axis>::Drop(this->Strides())
         );
-    };
+    }
 
     template <int Axis>
     inline typename TensorTraits<Derived>::ConstSliceT Slice(const IdxT slice) const {
@@ -88,7 +88,7 @@ public:
                         &(*this)(internal::AxisEmplacer<D, Axis>::Emplace(slice))),
                 internal::AxisDropper<D, Axis>::Drop(this->Strides())
         );
-    };
+    }
 
     // -=-=-=-=-=-=- conversion to base -=-=-=-=-=-=-
     inline Derived & Downcast() {
