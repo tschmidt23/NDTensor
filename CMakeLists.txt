@@ -10,10 +10,19 @@ if(NOT CUDA_COMPUTE_CAPABILITY)
 endif()
 
 add_definitions(-std=c++11)
+list(APPEND CUDA_NVCC_FLAGS "-std=c++11")
 
 find_package(CUDA REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(GTest QUIET)
+
+file(GLOB
+        NDT_SOURCES
+        "./Src/*.cpp"
+        "./Src/*.cu")
+
+cuda_add_library(NDT ${NDT_SOURCES})
+target_include_directories(NDT PUBLIC ${PROJECT_SOURCE_DIR}/Include ${EIGEN3_INCLUDE_DIR})
 
 if (${GTEST_FOUND})
 
@@ -25,7 +34,7 @@ if (${GTEST_FOUND})
     cuda_add_executable(Test
             ${TEST_SOURCES}
             )
-    target_link_libraries(Test ${GTEST_BOTH_LIBRARIES} pthread glog)
+    target_link_libraries(Test ${GTEST_BOTH_LIBRARIES} pthread glog NDT)
     target_include_directories(Test PUBLIC ${PROJECT_SOURCE_DIR}/Include ${EIGEN3_INCLUDE_DIR})
 
 endif()
@@ -41,3 +50,5 @@ install(DIRECTORY Include/ DESTINATION include)
 
 #install cmake config
 install_files(/share/NDT .cmake NDTensorConfig)
+
+install(TARGETS NDT DESTINATION lib)

@@ -6,6 +6,12 @@
 
 #include <Eigen/Core>
 
+
+#ifndef __NDT_NO_CUDA__
+#include <thrust/fill.h>
+#include <thrust/device_ptr.h>
+#endif // __NDT_NO_CUDA__
+
 #include <NDT/TupleHelpers.h>
 
 #include <NDT/TensorBase.h>
@@ -64,6 +70,26 @@ struct EquivalenceChecker<true> {
             throw std::runtime_error("not equivalent");
         }
     }
+
+};
+
+// -=-=-=- filling -=-=-=-
+template <typename T, Residency R>
+struct Filler;
+
+template <typename T>
+struct Filler<T, HostResident> {
+
+    static void Fill(T * data, const std::size_t N, const T & value) {
+        std::fill_n(data, N, value);
+    }
+
+};
+
+template <typename T>
+struct Filler<T, DeviceResident> {
+
+    inline static void Fill(T * data, const std::size_t N, const T & value);
 
 };
 
@@ -1284,6 +1310,12 @@ public:
     template <typename U = T,
               typename std::enable_if<!Const && sizeof(U), int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ void SetDataPointer(T * data) { data_ = data; }
+
+    // -=-=-=-=-=-=- filling functions -=-=-=-=-=-=-
+    template <bool Const_ = Const, typename std::enable_if<!Const_,int>::type=0>
+    inline __NDT_CUDA_HD_PREFIX__ void Fill(const T & value) {
+        internal::Filler<T,R>::Fill(data_, Count(), value);
+    }
 
     // -=-=-=-=-=-=- copying functions -=-=-=-=-=-=-
     template <Residency R2, bool Const2, bool Check=false>
