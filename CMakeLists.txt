@@ -21,7 +21,9 @@ file(GLOB
         "./Src/*.cpp"
         "./Src/*.cu")
 
+include_directories(${PROJECT_SOURCE_DIR}/Include ${EIGEN3_INCLUDE_DIR})
 cuda_add_library(NDT ${NDT_SOURCES})
+message(STATUS "${PROJECT_SOURCE_DIR}/Include")
 target_include_directories(NDT PUBLIC ${PROJECT_SOURCE_DIR}/Include ${EIGEN3_INCLUDE_DIR})
 
 if (${GTEST_FOUND})

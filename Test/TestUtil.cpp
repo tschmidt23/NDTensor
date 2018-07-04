@@ -32,4 +32,78 @@ TEST(UtilTest, TestExpandDims) {
 
 }
 
+TEST(UtilTest, TestZeros) {
+
+    ManagedTensor2i zeros2i = Zeros<2,int>({5, 3});
+
+    ASSERT_EQ(5, zeros2i.DimensionSize(0));
+    ASSERT_EQ(3, zeros2i.DimensionSize(1));
+
+    for (int i = 0; i < zeros2i.DimensionSize(0); ++i) {
+        for (int j = 0; j < zeros2i.DimensionSize(1); ++j) {
+            ASSERT_EQ(0, zeros2i(i, j));
+        }
+    }
+
+    ManagedTensor1f zeros1f = Zeros<float>(10);
+
+    ASSERT_EQ(10, zeros1f.DimensionSize(0));
+
+    for (int i = 0; i < 10; ++i) {
+        ASSERT_EQ(0, zeros1f(i));
+    }
+
+}
+
+TEST(UtilTest, TestZerosLike) {
+
+    Tensor3d tensor({2,4,3});
+
+    {
+        ManagedTensor3d zeros3d = ZerosLike(tensor);
+
+        ASSERT_EQ(2, zeros3d.DimensionSize(0));
+        ASSERT_EQ(4, zeros3d.DimensionSize(1));
+        ASSERT_EQ(3, zeros3d.DimensionSize(2));
+
+        for (int i = 0; i < zeros3d.DimensionSize(0); ++i) {
+            for (int j = 0; j < zeros3d.DimensionSize(1); ++j) {
+                for (int k = 0; k < zeros3d.DimensionSize(2); ++k) {
+                    ASSERT_EQ(0, zeros3d(i, j, k));
+                }
+            }
+        }
+    }
+
+    {
+        ManagedTensor3d zeros3d = ZerosLike(tensor.SubTensor({0, 1, 0}, {2, 2, 2}));
+
+        ASSERT_EQ(2, zeros3d.DimensionSize(0));
+        ASSERT_EQ(2, zeros3d.DimensionSize(1));
+        ASSERT_EQ(2, zeros3d.DimensionSize(2));
+
+        for (int i = 0; i < zeros3d.DimensionSize(0); ++i) {
+            for (int j = 0; j < zeros3d.DimensionSize(1); ++j) {
+                for (int k = 0; k < zeros3d.DimensionSize(2); ++k) {
+                    ASSERT_EQ(0, zeros3d(i, j, k));
+                }
+            }
+        }
+    }
+
+    {
+        ManagedTensor2d zeros2d = ZerosLike(tensor.Slice<1>(2));
+
+        ASSERT_EQ(2, zeros2d.DimensionSize(0));
+        ASSERT_EQ(3, zeros2d.DimensionSize(1));
+
+        for (int i = 0; i < zeros2d.DimensionSize(0); ++i) {
+            for (int j = 0; j < zeros2d.DimensionSize(1); ++j) {
+                ASSERT_EQ(0, zeros2d(i, j));
+            }
+        }
+    }
+
+}
+
 }
