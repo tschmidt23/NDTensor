@@ -800,6 +800,11 @@ public:
 
     // -=-=-=-=-=-=- sizing functions -=-=-=-=-=-=-
 private:
+
+    inline __NDT_CUDA_HD_PREFIX__ std::size_t CountImpl() const {
+        return dimensions_.prod();
+    }
+
     inline __NDT_CUDA_HD_PREFIX__ DimT DimensionSizeImpl(const IdxT dim) const {
         return dimensions_(dim);
     }
@@ -832,13 +837,8 @@ public:
         return dimensions_(1);
     }
 
-    inline __NDT_CUDA_HD_PREFIX__ std::size_t Count() const {
-//        return internal::count<DimT,D>(dimensions_);
-        return dimensions_.prod();
-    }
-
     inline __NDT_CUDA_HD_PREFIX__ std::size_t SizeBytes() const {
-        return Count() * sizeof(T);
+        return this->Count() * sizeof(T);
     }
 
 private:
@@ -1314,7 +1314,7 @@ public:
     // -=-=-=-=-=-=- filling functions -=-=-=-=-=-=-
     template <bool Const_ = Const, typename std::enable_if<!Const_,int>::type=0>
     inline __NDT_CUDA_HD_PREFIX__ void Fill(const T & value) {
-        internal::Filler<T,R>::Fill(data_, Count(), value);
+        internal::Filler<T,R>::Fill(data_, this->Count(), value);
     }
 
     // -=-=-=-=-=-=- copying functions -=-=-=-=-=-=-
@@ -1322,7 +1322,7 @@ public:
     inline void CopyFrom(const Tensor<D,T,R2,Const2> & other) {
         static_assert(!Const,"you cannot copy to a const tensor");
         internal::EquivalenceChecker<Check>::template CheckEquivalentSize<DimT,D>(this->Dimensions(),other.Dimensions());
-        internal::Copier<T,R,R2>::Copy(data_,other.Data(),Count());
+        internal::Copier<T,R,R2>::Copy(data_,other.Data(), this->Count());
     }
 
     template <Residency R2, bool Const2, bool Check=false>

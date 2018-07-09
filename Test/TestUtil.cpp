@@ -106,4 +106,16 @@ TEST(UtilTest, TestZerosLike) {
 
 }
 
+TEST(UtilTest, TestMeanAndSum) {
+
+    float data[10] = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f };
+
+    Tensor1f tensor(10, data);
+
+    ASSERT_NEAR(5.5f, Mean(tensor), 1e-4);
+
+    ASSERT_NEAR(55.f, Sum(tensor), 1e-4);
+
+}
+
 }

@@ -68,6 +68,10 @@ public:
 private:
 
     // -=-=-=-=-=-=- sizing functions -=-=-=-=-=-=-
+    inline __NDT_CUDA_HD_PREFIX__ DimT CountImpl() const {
+        return tensor_.Count();
+    }
+
     inline __NDT_CUDA_HD_PREFIX__ DimT DimensionSizeImpl(const IdxT dim) const {
         return tensor_.DimensionSize(dim);
     }

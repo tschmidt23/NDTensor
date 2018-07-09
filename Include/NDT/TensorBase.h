@@ -26,6 +26,10 @@ public:
     static constexpr bool Const = TensorTraits<Derived>::Const;
 
     // -=-=-=-=-=-=- sizing functions -=-=-=-=-=-=-
+    inline __NDT_CUDA_HD_PREFIX__ std::size_t Count() const {
+        return static_cast<const Derived *>(this)->CountImpl();
+    }
+
     inline __NDT_CUDA_HD_PREFIX__ DimT DimensionSize(const IdxT dim) const {
         return static_cast<const Derived *>(this)->DimensionSizeImpl(dim);
     }
