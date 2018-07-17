@@ -2,3 +2,9 @@ set(NDTensor_FOUND 1)
 
 set ( NDTensor_INCLUDE_DIR  "@NDTensor_INCLUDE_DIR@" )
 set ( NDTensor_INCLUDE_DIRS "@NDTensor_INCLUDE_DIRS@" )
+
+set ( NDTensor_LIBRARY  "@NDTensor_LIBRARY@" )
+set ( NDTensor_LIBRARIES "@NDTensor_LIBRARY@" )
+
+set ( NDTensor_LIBRARY_DIR  "@NDTensor_LIBRARY_DIR@" )
+

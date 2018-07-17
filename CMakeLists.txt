@@ -10,7 +10,8 @@ if(NOT CUDA_COMPUTE_CAPABILITY)
 endif()
 
 add_definitions(-std=c++11)
-list(APPEND CUDA_NVCC_FLAGS "-std=c++11")
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 --expt-relaxed-constexpr" )
+
 
 find_package(CUDA REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -43,6 +44,8 @@ endif()
 
 set( NDTensor_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include/" )
 set( NDTensor_INCLUDE_DIRS ${NDTensor_INCLUDE_DIR} )
+set( NDTensor_LIBRARY "NDT" )
+set( NDTensor_LIBRARY_DIR "${CMAKE_INSTALL_PREFIX}/lib/" )
 
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/NDTensorConfig.cmake.in
                 ${CMAKE_CURRENT_BINARY_DIR}/NDTensorConfig.cmake
@@ -51,6 +54,6 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/NDTensorConfig.cmake.in
 install(DIRECTORY Include/ DESTINATION include)
 
 #install cmake config
-install_files(/share/NDT .cmake NDTensorConfig)
+install_files(/share .cmake NDTensorConfig)
 
 install(TARGETS NDT DESTINATION lib)

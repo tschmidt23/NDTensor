@@ -13,6 +13,8 @@ void Filler<T, DeviceResident>::Fill(T * data, const std::size_t N, const T & va
 
 template class Filler<float, DeviceResident>;
 template class Filler<double, DeviceResident>;
+template class Filler<int, DeviceResident>;
+template class Filler<unsigned int, DeviceResident>;
 
 
 } // namespace internal
