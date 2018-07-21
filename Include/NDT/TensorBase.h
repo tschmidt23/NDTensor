@@ -74,14 +74,28 @@ public:
         return static_cast<const Derived *>(this)->StridesImpl();
     }
 
+    // If the axis is not the last, or the underlying tensor does not have a contiguous memory
+    // layout, taking a slice will introduced strided memory access, so we'll return a TensorView
     template <int Axis>
-    inline typename TensorTraits<Derived>::SliceT Slice(const IdxT slice) {
+    inline typename std::enable_if<Axis != (D-1) || !TensorTraits<Derived>::ContiguousStorage,
+            typename TensorTraits<Derived>::SliceT>::type Slice(const IdxT slice) {
         return typename TensorTraits<Derived>::SliceT(
                 typename TensorTraits<Derived>::SliceTensorT(
                         internal::AxisDropper<D, Axis>::Drop(Dimensions()),
                         &(*this)(internal::AxisEmplacer<D, Axis>::Emplace(slice))),
                 internal::AxisDropper<D, Axis>::Drop(this->Strides())
         );
+    }
+
+    // If the axis is the last and the underlying tensor does have a contiguous memory layout,
+    // taking a slice will yield another Tensor with a contiguous memory layout, so we can
+    // directly return another Tensor.
+    template <int Axis>
+    inline typename std::enable_if<Axis == (D-1) && TensorTraits<Derived>::ContiguousStorage,
+            typename TensorTraits<Derived>::SliceTensorT>::type Slice(const IdxT slice) {
+        return typename TensorTraits<Derived>::SliceTensorT(
+                        internal::AxisDropper<D, Axis>::Drop(Dimensions()),
+                        &(*this)(internal::AxisEmplacer<D, Axis>::Emplace(slice)));
     }
 
     template <int Axis>

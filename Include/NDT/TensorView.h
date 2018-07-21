@@ -100,6 +100,7 @@ private:
 // -=-=-=-=- traits -=-=-=-=-
 template <uint D_, typename T_, Residency R_, bool Const_>
 struct TensorTraits<TensorView<D_, T_, R_, Const_> > {
+    static constexpr bool ContiguousStorage = false;
     static constexpr uint D = D_;
     using T = T_;
     static constexpr Residency R = R_;

@@ -55,7 +55,7 @@ TEST(TensorViewTest, Test2D) {
     EXPECT_EQ(4, tensorView(0, 1));
 
     // Test Slice
-    VectorView<float> row = tensor.Slice<1>(1);
+    Vector<float> row = tensor.Slice<1>(1);
 
     EXPECT_EQ(3, row.DimensionSize(0));
 
