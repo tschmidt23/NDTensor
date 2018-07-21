@@ -72,6 +72,7 @@ typename std::enable_if<TensorTraits<Derived>::R == HostResident,
 
 }
 
+
 template <typename Derived>
 inline
 typename std::enable_if<TensorTraits<Derived>::R == HostResident,
