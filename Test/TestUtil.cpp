@@ -118,4 +118,18 @@ TEST(UtilTest, TestMeanAndSum) {
 
 }
 
+TEST(UtilTest, TestDot) {
+
+    float dataA[4] = {  1.0, -2.0, 7.5, -3.0 };
+    float dataB[4] = { -2.5,  4.0, 3.0,  2.0 };
+
+    static constexpr float expectedDotProduct = -2.5f - 8.f + 22.5f - 6.f;
+
+    NDT::Vector<float> vectorA(4, dataA);
+    NDT::Vector<float> vectorB(4, dataB);
+
+    ASSERT_NEAR(expectedDotProduct, NDT::Dot(vectorA, vectorB), 1e-4);
+
+}
+
 }

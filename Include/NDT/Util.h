@@ -84,4 +84,11 @@ typename std::enable_if<TensorTraits<Derived>::R == HostResident,
 
 }
 
+template <typename T, bool ConstA, bool ConstB>
+inline T Dot(const Tensor<1, T, HostResident, ConstA> & vectorA,
+                  const Tensor<1, T, HostResident, ConstB> & vectorB) {
+    assert(vectorA.Length() == vectorB.Length());
+    return std::inner_product(vectorA.Data(), vectorA.Data() + vectorA.Count(), vectorB.Data(), internal::ZeroType<T>::Value());
+}
+
 } // namespace NDT
