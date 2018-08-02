@@ -1,6 +1,7 @@
 #pragma once
 
 #include <NDT/Tensor.h>
+#include <NDT/Util.h>
 
 namespace NDT {
 
@@ -37,6 +38,30 @@ inline NDT::ManagedTensor<D, Scalar> RandomNormal(const unsigned int size,
                                                   const Scalar stdDev = Scalar(1)) {
 
     return RandomNormal<D, Scalar>(Eigen::Matrix<unsigned int,1,1>(size), mean, stdDev);
+
+}
+
+template <typename Derived>
+inline typename std::enable_if<TensorTraits<Derived>::R == HostResident && TensorTraits<Derived>::D == 1, void>::type
+RandomPermute(TensorBase<Derived> & tensor) {
+
+    std::mt19937 & gen = internal::Generator();
+
+    for (int i = 0; i < tensor.Count() - 1; ++i) {
+        std::uniform_int_distribution<> distro(i,tensor.Count()-1);
+        std::swap(tensor(i), tensor(distro(gen)));
+    }
+
+}
+
+template <typename T>
+inline ManagedVector<T> RandomPermutation(const T N) {
+
+    ManagedVector<T> permutation = ARange<T>(N);
+
+    RandomPermute(permutation);
+
+    return permutation;
 
 }
 
