@@ -106,6 +106,42 @@ TEST(UtilTest, TestZerosLike) {
 
 }
 
+TEST(UtilTest, TestARange) {
+
+    {
+        ManagedVector<int> vec = ARange(5);
+
+        ASSERT_EQ(5, vec.Length());
+
+        for (int i = 0; i < vec.Length(); ++i) {
+            ASSERT_EQ(i, vec(i));
+        }
+    }
+
+    {
+        ManagedVector<uint> vec = ARange<uint>(2, 8);
+
+        ASSERT_EQ(6, vec.Length());
+
+        for (int i = 0; i < vec.Length(); ++i) {
+            ASSERT_EQ(i+2, vec(i));
+        }
+
+    }
+
+    {
+        ManagedVector<std::size_t> vec = ARange<std::size_t>(100, 500, 50);
+
+        ASSERT_EQ(8, vec.Length());
+
+        for (int i = 0; i < vec.Length(); ++i) {
+            ASSERT_EQ(100 + 50 * i, vec(i));
+        }
+
+    }
+
+}
+
 TEST(UtilTest, TestMeanAndSum) {
 
     float data[10] = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f };

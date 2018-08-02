@@ -61,6 +61,33 @@ typename std::enable_if<TensorTraits<Derived>::R == HostResident,
 
 }
 
+template <typename T = int>
+inline
+typename std::enable_if<std::is_integral<T>::value, ManagedVector<T> >::type
+ARange(const T start, const T end, const T step = T(1)) {
+
+    assert(end > start);
+
+    ManagedVector<T> vec((end - start) / step);
+
+    std::generate_n(vec.Data(), vec.Count(), [step, n = start]() mutable {
+        T returnVal = n;
+        n += step;
+        return returnVal;
+    });
+
+    return vec;
+
+}
+
+
+template <typename T = int>
+inline
+typename std::enable_if<std::is_integral<T>::value, ManagedVector<T> >::type
+ARange(const int end) {
+    return ARange(0, end);
+}
+
 template <typename Derived>
 inline
 typename std::enable_if<TensorTraits<Derived>::R == HostResident,
