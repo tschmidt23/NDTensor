@@ -10,7 +10,6 @@ if(NOT CUDA_COMPUTE_CAPABILITY)
 endif()
 
 add_definitions(-std=c++11)
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 --expt-relaxed-constexpr" )
 
 
 find_package(CUDA REQUIRED)
@@ -21,6 +20,8 @@ file(GLOB
         NDT_SOURCES
         "./Src/*.cpp"
         "./Src/*.cu")
+
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 --expt-relaxed-constexpr" )
 
 include_directories(${PROJECT_SOURCE_DIR}/Include ${EIGEN3_INCLUDE_DIR})
 cuda_add_library(NDT ${NDT_SOURCES})
