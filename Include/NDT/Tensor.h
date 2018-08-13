@@ -1332,6 +1332,34 @@ public:
         internal::SliceCopier::Copy(*this, view);
     }
 
+    // -=-=-=-=-=-=- other functions -=-=-=-=-=-=-
+    inline T Min() const {
+        return std::accumulate(this->Data() + 1, this->Data() + this->Count(),
+                               this->Data()[0], [](const T & min, const T & v) {
+                    return std::min(min, v);
+                });
+    }
+
+    inline T Max() const {
+        return std::accumulate(this->Data() + 1, this->Data() + this->Count(),
+                this->Data()[0], [](const T & max, const T & v) {
+           return std::max(max, v);
+        });
+    }
+
+    inline std::pair<T, T> MinMax() const {
+        return std::accumulate(this->Data() + 1, this->Data() + this->Count(),
+                               std::pair<T, T>(this->Data()[0], this->Data()[0]), [](const std::pair<T, T> & minmax, const T & v) {
+                    if (v < minmax.first) {
+                        return std::pair<T, T>(v, minmax.second);
+                    }
+                    if (v > minmax.second) {
+                        return std::pair<T, T>(minmax.first, v);
+                    }
+                    return minmax;
+                });
+    }
+
 protected:
 
     Eigen::Matrix<DimT,D,1,Eigen::DontAlign> dimensions_;
