@@ -22,5 +22,47 @@ TEST(TensorOtherTest, TestMinMax) {
 
 }
 
+TEST(TensorOtherTest, TestCopy) {
+
+    unsigned short data[8] = { 14, 1, 8, 19, 0, 6, 11, 9 };
+
+    Tensor<2, unsigned short> tensor( 4, 2, data );
+
+    {
+
+        NDT::ManagedTensor<2, unsigned short> hCopy = tensor.Copy<HostResident>();
+
+        ASSERT_EQ(tensor.DimensionSize(0), hCopy.DimensionSize(0));
+        ASSERT_EQ(tensor.DimensionSize(1), hCopy.DimensionSize(1));
+
+        for (int i = 0; i < tensor.DimensionSize(1); ++i) {
+            for (int j = 0; j < tensor.DimensionSize(0); ++j) {
+                ASSERT_EQ(tensor(i, j), hCopy(i, j));
+            }
+        }
+
+    }
+
+    {
+
+        NDT::ManagedTensor<2, unsigned short> dCopy = tensor.Copy<DeviceResident>();
+
+        ASSERT_EQ(tensor.DimensionSize(0), dhCopy.DimensionSize(0));
+        ASSERT_EQ(tensor.DimensionSize(1), dCopy.DimensionSize(1));
+
+        NDT::ManagedTensor<2, unsigned short> hCopy = dCopy.Copy<HostResident>();
+
+        ASSERT_EQ(tensor.DimensionSize(0), hCopy.DimensionSize(0));
+        ASSERT_EQ(tensor.DimensionSize(1), hCopy.DimensionSize(1));
+
+        for (int i = 0; i < tensor.DimensionSize(1); ++i) {
+            for (int j = 0; j < tensor.DimensionSize(0); ++j) {
+                ASSERT_EQ(tensor(i, j), hCopy(i, j));
+            }
+        }
+
+    }
+
+}
 
 }

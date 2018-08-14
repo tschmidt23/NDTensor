@@ -701,6 +701,9 @@ class TypedResidentTensorBase : public TypedTensorBase<Scalar> {
 template <uint D, typename T, Residency R, bool Const = false>
 class TensorView;
 
+template <uint D, typename T, Residency R = HostResident>
+class ManagedTensor;
+
 template <uint D, typename T, Residency R = HostResident, bool Const = false>
 class Tensor
         : public TensorBase<Tensor<D,T,R,Const> >,
@@ -1360,6 +1363,9 @@ public:
                 });
     }
 
+    template <Residency R_>
+    ManagedTensor<D, T, R_> Copy() const;
+
 protected:
 
     Eigen::Matrix<DimT,D,1,Eigen::DontAlign> dimensions_;
@@ -1396,7 +1402,7 @@ class TypedResidentManagedTensorBase {
 
 };
 
-template <uint D, typename T, Residency R = HostResident>
+template <uint D, typename T, Residency R>
 class ManagedTensor : public Tensor<D,T,R,false>,
                       public TypedResidentManagedTensorBase<T,R>,
                       public ResidentManagedTensorBase<R> {
@@ -1449,6 +1455,20 @@ private:
     ManagedTensor & operator=(const ManagedTensor &) = delete;
 
 };
+
+// -=-=-=-=- defes -=-=-=-=-
+template <uint D, typename T, Residency R, bool Const>
+template <Residency R_>
+ManagedTensor<D, T, R_> Tensor<D, T, R, Const>::Copy() const {
+
+    ManagedTensor<D, T, R_> copy(this->Dimensions());
+
+    copy.CopyFrom(*this);
+
+    return copy;
+
+}
+
 
 // -=-=-=-=- traits -=-=-=-=-
 template <uint D_, typename T_, Residency R_, bool Const_>
