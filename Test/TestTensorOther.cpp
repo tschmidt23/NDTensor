@@ -30,7 +30,7 @@ TEST(TensorOtherTest, TestCopy) {
 
     {
 
-        NDT::ManagedTensor<2, unsigned short> hCopy = tensor.Copy<HostResident>();
+        NDT::ManagedTensor<2, unsigned short> hCopy = tensor.Copy();
 
         ASSERT_EQ(tensor.DimensionSize(0), hCopy.DimensionSize(0));
         ASSERT_EQ(tensor.DimensionSize(1), hCopy.DimensionSize(1));

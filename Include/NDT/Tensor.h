@@ -1363,7 +1363,7 @@ public:
                 });
     }
 
-    template <Residency R_>
+    template <Residency R_ = HostResident>
     ManagedTensor<D, T, R_> Copy() const;
 
 protected:
