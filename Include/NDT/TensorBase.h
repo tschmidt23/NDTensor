@@ -87,6 +87,17 @@ public:
         );
     }
 
+    template <int Axis>
+    inline typename std::enable_if<Axis != (D-1) || !TensorTraits<Derived>::ContiguousStorage,
+            typename TensorTraits<Derived>::ConstSliceT>::type Slice(const IdxT slice) const {
+        return typename TensorTraits<Derived>::ConstSliceT(
+                typename TensorTraits<Derived>::ConstSliceTensorT(
+                        internal::AxisDropper<D, Axis>::Drop(Dimensions()),
+                        &(*this)(internal::AxisEmplacer<D, Axis>::Emplace(slice))),
+                internal::AxisDropper<D, Axis>::Drop(this->Strides())
+        );
+    }
+
     // If the axis is the last and the underlying tensor does have a contiguous memory layout,
     // taking a slice will yield another Tensor with a contiguous memory layout, so we can
     // directly return another Tensor.
@@ -99,14 +110,13 @@ public:
     }
 
     template <int Axis>
-    inline typename TensorTraits<Derived>::ConstSliceT Slice(const IdxT slice) const {
-        return typename TensorTraits<Derived>::ConstSliceT(
-                typename TensorTraits<Derived>::ConstSliceTensorT(
-                        internal::AxisDropper<D, Axis>::Drop(Dimensions()),
-                        &(*this)(internal::AxisEmplacer<D, Axis>::Emplace(slice))),
-                internal::AxisDropper<D, Axis>::Drop(this->Strides())
-        );
+    inline typename std::enable_if<Axis == (D-1) && TensorTraits<Derived>::ContiguousStorage,
+            typename TensorTraits<Derived>::ConstSliceTensorT>::type Slice(const IdxT slice) const {
+        return typename TensorTraits<Derived>::ConstSliceTensorT(
+                internal::AxisDropper<D, Axis>::Drop(Dimensions()),
+                &(*this)(internal::AxisEmplacer<D, Axis>::Emplace(slice)));
     }
+
 
     // -=-=-=-=-=-=- conversion to base -=-=-=-=-=-=-
     inline Derived & Downcast() {
