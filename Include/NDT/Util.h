@@ -31,7 +31,7 @@ inline ManagedTensor<D,T,HostResident> Zeros(const Eigen::Matrix<uint,D,1> & siz
 
     ManagedTensor<D,T,HostResident> tensor(size);
 
-    tensor.Fill(T(0));
+    tensor.Fill(internal::ZeroType<T>::Value());
 
     return tensor;
 
@@ -55,7 +55,7 @@ typename std::enable_if<TensorTraits<Derived>::R == HostResident,
 
     ManagedTensor<TensorTraits<Derived>::D, T, HostResident> tensor(other.Dimensions());
 
-    tensor.Fill(T(0));
+    tensor.Fill(internal::ZeroType<T>::Value());
 
     return tensor;
 
