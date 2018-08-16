@@ -106,6 +106,80 @@ TEST(UtilTest, TestZerosLike) {
 
 }
 
+TEST(UtilTest, TestOnes) {
+
+    ManagedTensor2i ones2i = Ones<2,int>({5, 3});
+
+    ASSERT_EQ(5, ones2i.DimensionSize(0));
+    ASSERT_EQ(3, ones2i.DimensionSize(1));
+
+    for (int i = 0; i < ones2i.DimensionSize(0); ++i) {
+        for (int j = 0; j < ones2i.DimensionSize(1); ++j) {
+            ASSERT_EQ(1, ones2i(i, j));
+        }
+    }
+
+    ManagedTensor1f ones1f = Ones<float>(10);
+
+    ASSERT_EQ(10, ones1f.DimensionSize(0));
+
+    for (int i = 0; i < 10; ++i) {
+        ASSERT_EQ(1.f, ones1f(i));
+    }
+
+}
+
+TEST(UtilTest, TestOnesLike) {
+
+    Tensor3d tensor({2,4,3});
+
+    {
+        ManagedTensor3d ones3d = OnesLike(tensor);
+
+        ASSERT_EQ(2, ones3d.DimensionSize(0));
+        ASSERT_EQ(4, ones3d.DimensionSize(1));
+        ASSERT_EQ(3, ones3d.DimensionSize(2));
+
+        for (int i = 0; i < ones3d.DimensionSize(0); ++i) {
+            for (int j = 0; j < ones3d.DimensionSize(1); ++j) {
+                for (int k = 0; k < ones3d.DimensionSize(2); ++k) {
+                    ASSERT_EQ(1.0, ones3d(i, j, k));
+                }
+            }
+        }
+    }
+
+    {
+        ManagedTensor3d ones3d = OnesLike(tensor.SubTensor({0, 1, 0}, {2, 2, 2}));
+
+        ASSERT_EQ(2, ones3d.DimensionSize(0));
+        ASSERT_EQ(2, ones3d.DimensionSize(1));
+        ASSERT_EQ(2, ones3d.DimensionSize(2));
+
+        for (int i = 0; i < ones3d.DimensionSize(0); ++i) {
+            for (int j = 0; j < ones3d.DimensionSize(1); ++j) {
+                for (int k = 0; k < ones3d.DimensionSize(2); ++k) {
+                    ASSERT_EQ(1.0, ones3d(i, j, k));
+                }
+            }
+        }
+    }
+
+    {
+        ManagedTensor2d ones2d = OnesLike(tensor.Slice<1>(2));
+
+        ASSERT_EQ(2, ones2d.DimensionSize(0));
+        ASSERT_EQ(3, ones2d.DimensionSize(1));
+
+        for (int i = 0; i < ones2d.DimensionSize(0); ++i) {
+            for (int j = 0; j < ones2d.DimensionSize(1); ++j) {
+                ASSERT_EQ(1.0, ones2d(i, j));
+            }
+        }
+    }
+
+}
+
 TEST(UtilTest, TestARange) {
 
     {
