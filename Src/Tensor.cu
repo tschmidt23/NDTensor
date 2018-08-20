@@ -15,7 +15,8 @@ template class Filler<float, DeviceResident>;
 template class Filler<double, DeviceResident>;
 template class Filler<int, DeviceResident>;
 template class Filler<unsigned int, DeviceResident>;
-
+template class Filler<long long int, DeviceResident>;
+template class Filler<unsigned long long int, DeviceResident>;
 
 } // namespace internal
 
