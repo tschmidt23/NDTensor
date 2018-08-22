@@ -100,13 +100,13 @@ struct AutomaticAllocator;
 template <typename T>
 struct AutomaticAllocator<T,HostResident> {
 
-    inline static T * allocate(const std::size_t length) {
+    inline static T * Allocate(const std::size_t length) {
         T * vals = new T[length];
 //        T * vals = std::malloc(length * sizeof(T));
         return vals;
     }
 
-    inline static void deallocate(T * vec) {
+    inline static void Deallocate(T * vec) {
         delete [] vec;
 //        std::free(vec);
     }
@@ -116,15 +116,15 @@ struct AutomaticAllocator<T,HostResident> {
 template <typename T>
 struct AutomaticAllocator<T,DeviceResident> {
 
-    inline static T * allocate(const std::size_t length) {
+    inline static T * Allocate(const std::size_t length) {
 
         T * vals;
-        cudaMalloc(&vals,length*sizeof(T));
+        cudaMalloc(&vals, length*sizeof(T));
 
         return vals;
     }
 
-    inline static void deallocate(T * vec) {
+    inline static void Deallocate(T * vec) {
 
         cudaFree(vec);
 
@@ -1428,14 +1428,14 @@ public:
 
     template <int D2 = D, typename std::enable_if<D2 == 1,int>::type = 0>
     ManagedTensor(const DimT length) :
-        Tensor<D,T,R,false>::Tensor(length, internal::AutomaticAllocator<T,R>::allocate(length)) { }
+        Tensor<D,T,R,false>::Tensor(length, internal::AutomaticAllocator<T,R>::Allocate(length)) { }
 
     ManagedTensor(const Eigen::Matrix<DimT,D,1> & dimensions) :
         Tensor<D,T,R,false>::Tensor(dimensions,
-                                    internal::AutomaticAllocator<T,R>::allocate(dimensions.prod())) { }
+                                    internal::AutomaticAllocator<T,R>::Allocate(dimensions.prod())) { }
 
     ~ManagedTensor() {
-        internal::AutomaticAllocator<T,R>::deallocate(this->data_);
+        internal::AutomaticAllocator<T,R>::Deallocate(this->data_);
     }
 
     template <int D2 = D, typename std::enable_if<D2 == 1,int>::type = 0>
@@ -1444,8 +1444,8 @@ public:
     }
 
     void Resize(const Eigen::Matrix<DimT,D,1> & dimensions) {
-        internal::AutomaticAllocator<T,R>::deallocate(this->data_);
-        this->data_ = internal::AutomaticAllocator<T,R>::allocate(dimensions.prod());
+        internal::AutomaticAllocator<T,R>::Deallocate(this->data_);
+        this->data_ = internal::AutomaticAllocator<T,R>::Allocate(dimensions.prod());
         this->dimensions_ = dimensions;
     }
 

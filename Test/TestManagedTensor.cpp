@@ -30,4 +30,42 @@ TEST(ManagedTensorTest, TestResize) {
 
 }
 
+TEST(ManagedTensorTest, TestZeroLengthAlloc) {
+
+    {
+
+        NDT::ManagedTensor4d tensor;
+
+        NDT::ManagedDeviceTensor1ui dTensor;
+
+    }
+
+    const cudaError_t err = cudaGetLastError();
+
+    ASSERT_EQ(cudaSuccess, err);
+
+}
+
+
+TEST(ManagedTensorTest, TestZeroLengthResize) {
+
+    {
+
+        NDT::ManagedTensor4d tensor({8, 2, 3, 6});
+
+        tensor.Resize({0, 0, 0, 0});
+
+        NDT::ManagedDeviceTensor1ui dTensor(14);
+
+        dTensor.Resize(0);
+
+    }
+
+    cudaDeviceSynchronize();
+    const cudaError_t err = cudaGetLastError();
+
+    ASSERT_EQ(cudaSuccess, err);
+
+}
+
 } // namespace
