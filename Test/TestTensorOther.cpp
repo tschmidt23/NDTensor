@@ -35,8 +35,8 @@ TEST(TensorOtherTest, TestCopy) {
         ASSERT_EQ(tensor.DimensionSize(0), hCopy.DimensionSize(0));
         ASSERT_EQ(tensor.DimensionSize(1), hCopy.DimensionSize(1));
 
-        for (int i = 0; i < tensor.DimensionSize(1); ++i) {
-            for (int j = 0; j < tensor.DimensionSize(0); ++j) {
+        for (int j = 0; j < tensor.DimensionSize(1); ++j) {
+            for (int i = 0; i < tensor.DimensionSize(0); ++i) {
                 ASSERT_EQ(tensor(i, j), hCopy(i, j));
             }
         }
@@ -45,9 +45,9 @@ TEST(TensorOtherTest, TestCopy) {
 
     {
 
-        NDT::ManagedTensor<2, unsigned short> dCopy = tensor.Copy<DeviceResident>();
+        NDT::ManagedTensor<2, unsigned short, DeviceResident> dCopy = tensor.Copy<DeviceResident>();
 
-        ASSERT_EQ(tensor.DimensionSize(0), dhCopy.DimensionSize(0));
+        ASSERT_EQ(tensor.DimensionSize(0), dCopy.DimensionSize(0));
         ASSERT_EQ(tensor.DimensionSize(1), dCopy.DimensionSize(1));
 
         NDT::ManagedTensor<2, unsigned short> hCopy = dCopy.Copy<HostResident>();
@@ -55,8 +55,8 @@ TEST(TensorOtherTest, TestCopy) {
         ASSERT_EQ(tensor.DimensionSize(0), hCopy.DimensionSize(0));
         ASSERT_EQ(tensor.DimensionSize(1), hCopy.DimensionSize(1));
 
-        for (int i = 0; i < tensor.DimensionSize(1); ++i) {
-            for (int j = 0; j < tensor.DimensionSize(0); ++j) {
+        for (int j = 0; j < tensor.DimensionSize(1); ++j) {
+            for (int i = 0; i < tensor.DimensionSize(0); ++i) {
                 ASSERT_EQ(tensor(i, j), hCopy(i, j));
             }
         }
