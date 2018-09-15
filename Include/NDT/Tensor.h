@@ -1366,6 +1366,31 @@ public:
     template <Residency R_ = HostResident>
     ManagedTensor<D, T, R_> Copy() const;
 
+    // these make the class iterable
+    inline T * begin() {
+        return this->Data();
+    }
+
+    inline const T * const cbegin() const {
+        return this->Data();
+    }
+
+    inline const T * const begin() const {
+        return this->cbegin();
+    }
+
+    inline T * end() {
+        return this->Data() + this->Count();
+    }
+
+    inline const T * const cend() const {
+        return this->Data() + this->Count();
+    }
+
+    inline const T * const end() const {
+        return this->cend();
+    }
+
 protected:
 
     Eigen::Matrix<DimT,D,1,Eigen::DontAlign> dimensions_;

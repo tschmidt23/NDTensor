@@ -65,4 +65,25 @@ TEST(TensorOtherTest, TestCopy) {
 
 }
 
+TEST(TensorOtherTest, TestIterate) {
+
+    int data[7] = { 0, 1, 2, 3, 4, 5, 6 };
+
+    NDT::Vector<int> vector(7, data);
+
+    int index = 0;
+    for (int i : vector) {
+
+        ASSERT_EQ(index, vector(index));
+
+        ++index;
+
+    }
+
+    ASSERT_EQ(&data[2], std::find(vector.begin(), vector.end(), 2));
+
+    ASSERT_EQ(&data[4], std::find(vector.cbegin(), vector.cend(), 4));
+
+}
+
 }
