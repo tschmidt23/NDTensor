@@ -72,9 +72,9 @@ TEST(TensorOtherTest, TestIterate) {
     NDT::Vector<int> vector(7, data);
 
     int index = 0;
-    for (int i : vector) {
+    for (const int i : vector) {
 
-        ASSERT_EQ(index, vector(index));
+        ASSERT_EQ(index, i);
 
         ++index;
 
