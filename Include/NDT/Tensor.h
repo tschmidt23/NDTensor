@@ -17,6 +17,7 @@
 #include <NDT/TensorBase.h>
 
 #include <NDT/Internal/ConstQualifier.h>
+#include <NDT/Internal/EigenHelpers.h>
 #include <NDT/Internal/IndexList.h>
 #include <NDT/Internal/Interpolation.h>
 #include <NDT/Internal/InterpolationGradient.h>
@@ -172,14 +173,15 @@ inline bool BoundsCheck(const IndexList<uint,sizeof...(Tail)+1> dimensions,
 enum DifferenceType {
     BackwardDifference,
     CentralDifference,
-    ForwardDifference
+    ForwardDifference,
+    AdaptiveDifference
 };
 
 template <int I, int Diff, typename ... IdxTs>
 struct GradientReindex {
 
     __NDT_CUDA_HD_PREFIX__ inline
-    static std::tuple<IdxTs...> reindex(std::tuple<IdxTs...> tuple) {
+    static std::tuple<IdxTs...> Reindex(std::tuple<IdxTs...> tuple) {
 //        std::cout << std::get<I>(tuple) << " -> ";
         std::get<I>(tuple) += Diff;
 //        std::cout << std::get<I>(tuple) << std::endl;
@@ -195,7 +197,7 @@ struct Interpolator {
     typedef Scalar ReturnType;
 
     template <typename ... IdxTs>
-    inline __NDT_CUDA_HD_PREFIX__ ReturnType interpolate(const InputType * data,
+    inline __NDT_CUDA_HD_PREFIX__ ReturnType Interpolate(const InputType * data,
                                                       const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                                       const std::tuple<IdxTs...> & indices) const {
 
@@ -214,11 +216,11 @@ struct TransformInterpolator {
     inline __NDT_CUDA_HD_PREFIX__ TransformInterpolator(Transformer transformer) : transformer(transformer) { }
 
     template <typename ... IdxTs>
-    inline __NDT_CUDA_HD_PREFIX__ ReturnType interpolate(const InputType * data,
-                                                      const IndexList<uint,sizeof...(IdxTs)> dimensions,
-                                                      const std::tuple<IdxTs...> & indices) const {
+    inline __NDT_CUDA_HD_PREFIX__ ReturnType Interpolate(const InputType * data,
+                                                         const IndexList<uint,sizeof...(IdxTs)> dimensions,
+                                                         const std::tuple<IdxTs...> & indices) const {
 
-        return TransformInterpolate(data,dimensions,transformer,indices);
+        return TransformInterpolate(data, dimensions, transformer, indices);
 
     }
 
@@ -238,11 +240,11 @@ struct TransformValidOnlyInterpolator {
         : transformer(transformer), check(check) { }
 
     template <typename ... IdxTs>
-    inline __NDT_CUDA_HD_PREFIX__ typename Transformer::ReturnType interpolate(const typename Transformer::InputType * data,
+    inline __NDT_CUDA_HD_PREFIX__ typename Transformer::ReturnType Interpolate(const typename Transformer::InputType * data,
                                                                             const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                                                             const std::tuple<IdxTs...> & indices) const {
 
-        return TransformInterpolateValidOnly(data,dimensions,transformer,check,indices);
+        return TransformInterpolateValidOnly(data, dimensions, transformer, check, indices);
 
     }
 
@@ -258,59 +260,62 @@ struct GradientComputeCore;
 
 // R-dimensional values, D-dimensional gradient
 template <typename Scalar, typename InterpolatorType, int R, int D, int Options>
-struct GradientComputeCore<BackwardDifference, InterpolatorType, Scalar, R, D, Options> {
+struct GradientComputeCore<ForwardDifference, InterpolatorType, Scalar, R, D, Options> {
+
+    using DataType = typename DevolvingMatrixType<Scalar, R, 1, Options>::Type;
 
     template <typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ inline GradientComputeCore(const typename InterpolatorType::InputType * data,
-                                                   const IndexList<uint,sizeof...(IdxTs)> dimensions,
-                                                   const std::tuple<IdxTs...> & indices,
-                                                   InterpolatorType interpolator)
-        : interpolator(interpolator),
-          center(interpolator.interpolate(data,dimensions,indices)) { }
+                                                      const IndexList<uint, sizeof...(IdxTs)> dimensions,
+                                                      const std::tuple<IdxTs...> & indices,
+                                                      InterpolatorType interpolator)
+            : interpolator(interpolator),
+              center(interpolator.Interpolate(data, dimensions, indices)) { }
 
     template <int I, typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ inline
-    Eigen::Matrix<Scalar,R,1,Options> compute(const typename InterpolatorType::InputType * data,
-                                              const IndexList<uint,sizeof...(IdxTs)> dimensions,
-                                              const std::tuple<IdxTs...> & indices) const {
+    DataType Compute(const typename InterpolatorType::InputType * data,
+                     const IndexList<uint,sizeof...(IdxTs)> dimensions,
+                     const std::tuple<IdxTs...> & indices) const {
 
-        return center - interpolator.interpolate(data,dimensions,GradientReindex<D-1-I,-1,IdxTs...>::reindex(indices));
+        return interpolator.Interpolate(data, dimensions, GradientReindex<D-1-I, 1, IdxTs...>::Reindex(indices)) - center;
 
     }
 
 private:
 
     InterpolatorType interpolator;
-    const Eigen::Matrix<Scalar,R,1,Options> center;
+    const DataType center;
 
 };
 
-// scalar values, D-dimensional gradient
-template <typename Scalar, typename InterpolatorType, int D, int Options>
-struct GradientComputeCore<BackwardDifference, InterpolatorType, Scalar, 1, D, Options> {
+template <typename Scalar, typename InterpolatorType, int R, int D, int Options>
+struct GradientComputeCore<BackwardDifference, InterpolatorType, Scalar, R, D, Options> {
+
+    using DataType = typename DevolvingMatrixType<Scalar, R, 1, Options>::Type;
 
     template <typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ inline GradientComputeCore(const typename InterpolatorType::InputType * data,
-                                                   const IndexList<uint,sizeof...(IdxTs)> dimensions,
-                                                   const std::tuple<IdxTs...> & indices,
-                                                   InterpolatorType interpolator)
-        : interpolator(interpolator),
-          center(interpolator.interpolate(data,dimensions,indices)) { }
+                                                      const IndexList<uint, sizeof...(IdxTs)> dimensions,
+                                                      const std::tuple<IdxTs...> & indices,
+                                                      InterpolatorType interpolator)
+            : interpolator(interpolator),
+              center(interpolator.Interpolate(data, dimensions, indices)) { }
 
     template <int I, typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ inline
-    Scalar compute(const typename InterpolatorType::InputType * data,
-                   const IndexList<uint,sizeof...(IdxTs)> dimensions,
-                   const std::tuple<IdxTs...> & indices) const {
+    DataType Compute(const typename InterpolatorType::InputType * data,
+                     const IndexList<uint,sizeof...(IdxTs)> dimensions,
+                     const std::tuple<IdxTs...> & indices) const {
 
-        return center - interpolator.interpolate(data,dimensions,GradientReindex<D-1-I,-1,IdxTs...>::reindex(indices));
+        return center - interpolator.Interpolate(data, dimensions, GradientReindex<D-1-I, -1, IdxTs...>::Reindex(indices));
 
     }
 
 private:
 
     InterpolatorType interpolator;
-    const Scalar center;
+    const DataType center;
 
 };
 
@@ -319,46 +324,57 @@ private:
 template <typename Scalar, typename InterpolatorType, int R, int D, int Options>
 struct GradientComputeCore<CentralDifference, InterpolatorType, Scalar, R, D, Options> {
 
+    using DataType = typename DevolvingMatrixType<Scalar, R, 1, Options>::Type;
+
+    template <typename ... IdxTs>
+    __NDT_CUDA_HD_PREFIX__ inline GradientComputeCore(const DataType * /*data*/,
+                                                      const IndexList<uint,sizeof...(IdxTs)> /*dimensions*/,
+                                                      const std::tuple<IdxTs...> & /*indices*/,
+                                                      InterpolatorType interpolator)
+            : interpolator(interpolator) { }
+
+    template <int I, typename ... IdxTs>
+    __NDT_CUDA_HD_PREFIX__ inline
+    DataType Compute(const DataType * data,
+                                              const IndexList<uint,sizeof...(IdxTs)> dimensions,
+                                              const std::tuple<IdxTs...> & indices) const {
+
+        return 0.5*(interpolator.Interpolate(data,dimensions,GradientReindex<D-1-I, 1, IdxTs...>::Reindex(indices)) -
+        interpolator.Interpolate(data,dimensions,GradientReindex<D-1-I,-1,IdxTs...>::Reindex(indices)));
+
+    }
+
+private:
+
+    InterpolatorType interpolator;
+
+};
+
+
+
+
+
+
+
+// R-dimensional values, D-dimensional gradient
+template <typename Scalar, typename InterpolatorType, int R, int D, int Options>
+struct GradientComputeCore<AdaptiveDifference, InterpolatorType, Scalar, R, D, Options> {
+
     template <typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ inline GradientComputeCore(const Eigen::Matrix<Scalar,R,1,Options> * /*data*/,
-                        const IndexList<uint,sizeof...(IdxTs)> /*dimensions*/,
-                        const std::tuple<IdxTs...> & /*indices*/,
-                        InterpolatorType interpolator)
-        : interpolator(interpolator) { }
+                                                      const IndexList<uint,sizeof...(IdxTs)> /*dimensions*/,
+                                                      const std::tuple<IdxTs...> & /*indices*/,
+                                                      InterpolatorType interpolator)
+            : interpolator(interpolator) { }
 
     template <int I, typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ inline
-    Eigen::Matrix<Scalar,R,1,Options> compute(const Eigen::Matrix<Scalar,R,1,Options> * data,
+    Eigen::Matrix<Scalar,R,1,Options> Compute(const Eigen::Matrix<Scalar,R,1,Options> * data,
                                               const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                               const std::tuple<IdxTs...> & indices) const {
 
-        return 0.5*(interpolator.interpolate(data,dimensions,GradientReindex<D-1-I,1,IdxTs...>::reindex(indices)) - interpolator.interpolate(data,dimensions,GradientReindex<D-1-I,-1,IdxTs...>::reindex(indices)));
-
-    }
-
-private:
-
-    InterpolatorType interpolator;
-
-};
-
-template <typename Scalar, typename InterpolatorType, int D, int Options>
-struct GradientComputeCore<CentralDifference, InterpolatorType, Scalar, 1, D, Options> {
-
-    template <typename ... IdxTs>
-    __NDT_CUDA_HD_PREFIX__ inline GradientComputeCore(const typename InterpolatorType::InputType * /*data*/,
-                        const IndexList<uint,sizeof...(IdxTs)> /*dimensions*/,
-                        const std::tuple<IdxTs...> & /*indices*/,
-                        InterpolatorType interpolator)
-        : interpolator(interpolator) { }
-
-    template <int I, typename ... IdxTs>
-    __NDT_CUDA_HD_PREFIX__ inline
-    Scalar compute(const typename InterpolatorType::InputType * data,
-                   const IndexList<uint,sizeof...(IdxTs)> dimensions,
-                   const std::tuple<IdxTs...> & indices) const {
-
-        return 0.5*(interpolator.interpolate(data,dimensions,GradientReindex<D-1-I,1,IdxTs...>::reindex(indices)) - interpolator.interpolate(data,dimensions,GradientReindex<D-1-I,-1,IdxTs...>::reindex(indices)));
+        return 0.5*(interpolator.Interpolate(data,dimensions,GradientReindex<D-1-I,1,IdxTs...>::Reindex(indices)) -
+        interpolator.Interpolate(data,dimensions,GradientReindex<D-1-I,-1,IdxTs...>::Reindex(indices)));
 
     }
 
@@ -369,34 +385,6 @@ private:
 };
 
 
-
-template <typename Scalar, typename InterpolatorType, int R, int D, int Options>
-struct GradientComputeCore<ForwardDifference, InterpolatorType, Scalar, R, D, Options> {
-
-    template <typename ... IdxTs>
-     __NDT_CUDA_HD_PREFIX__ inline GradientComputeCore(const typename InterpolatorType::InputType * data,
-                                                    const IndexList<uint,sizeof...(IdxTs)> dimensions,
-                                                    const std::tuple<IdxTs...> & indices,
-                                                    InterpolatorType interpolator)
-        : interpolator(interpolator),
-          center(interpolator.interpolate(data,dimensions,indices)) { }
-
-    template <int I, typename ... IdxTs>
-    __NDT_CUDA_HD_PREFIX__ inline
-    Eigen::Matrix<Scalar,R,1,Options> compute(const typename InterpolatorType::InputType * data,
-                                              const IndexList<uint,sizeof...(IdxTs)> dimensions,
-                                              const std::tuple<IdxTs...> & indices) const {
-
-        return interpolator.interpolate(data,dimensions,GradientReindex<D-1-I,1,IdxTs...>::reindex(indices)) - center;
-
-    }
-
-private:
-
-    InterpolatorType interpolator;
-    const Eigen::Matrix<Scalar,R,1,Options> center;
-
-};
 
 
 
@@ -405,13 +393,13 @@ struct GradientFiller {
 
     template <int Options, typename InterpolatorT, typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ inline
-    static void fill(Eigen::Matrix<Scalar,R,D,Options> & gradient,
-                     const GradientComputeCore<Diff,InterpolatorT,Scalar,R,D,Options> & core,
+    static void Fill(Eigen::Matrix<Scalar, R, D, Options> & gradient,
+                     const GradientComputeCore<Diff, InterpolatorT, Scalar, R, D, Options> & core,
                      const typename InterpolatorT::InputType * data,
-                     const IndexList<uint,sizeof...(IdxTs)> dimensions,
+                     const IndexList<uint, sizeof...(IdxTs)> dimensions,
                      const std::tuple<IdxTs...> & indices) {
-        gradient.template block<R,1>(0,I) = core.template compute<I,IdxTs...>(data,dimensions,indices);
-        GradientFiller<Diff,Scalar, R, D, I+1>::fill(gradient,core,data,dimensions,indices);
+        gradient.template block<R, 1>(0, I) = core.template Compute<I,IdxTs...>(data, dimensions, indices);
+        GradientFiller<Diff,Scalar, R, D, I+1>::Fill(gradient, core, data, dimensions, indices);
     }
 
 };
@@ -421,28 +409,28 @@ struct GradientFiller<Diff,Scalar, R, D, D> {
 
     template <int Options, typename InterpolatorT, typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ inline
-    static void fill(Eigen::Matrix<Scalar,R,D,Options> & /*gradient*/,
-                     const GradientComputeCore<Diff,InterpolatorT,Scalar,R,D,Options> & /*core*/,
+    static void Fill(Eigen::Matrix<Scalar, R, D, Options> & /*gradient*/,
+                     const GradientComputeCore<Diff, InterpolatorT, Scalar, R, D, Options> & /*core*/,
                      const typename InterpolatorT::InputType * /*data*/,
-                     const IndexList<uint,sizeof...(IdxTs)> /*dimensions*/,
+                     const IndexList<uint, sizeof...(IdxTs)> /*dimensions*/,
                      const std::tuple<IdxTs...> & /*indices*/) { }
 
 };
 
 // TODO: I don't think this special case is needed
 template <DifferenceType Diff, typename Scalar, int D, int I>
-struct GradientFiller<Diff, Scalar,1,D,I> {
+struct GradientFiller<Diff, Scalar, 1, D, I> {
 
     template <int Options, typename InterpolatorT, typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ inline
-    static void fill(Eigen::Matrix<Scalar,1,D,Options> & gradient,
-                     const GradientComputeCore<Diff,InterpolatorT,Scalar,1,D,Options> & core,
+    static void Fill(Eigen::Matrix<Scalar, 1, D, Options> & gradient,
+                     const GradientComputeCore<Diff, InterpolatorT, Scalar, 1, D, Options> & core,
                      const typename InterpolatorT::InputType * data,
-                     const IndexList<uint,sizeof...(IdxTs)> dimensions,
+                     const IndexList<uint, sizeof...(IdxTs)> dimensions,
                      const std::tuple<IdxTs...> & indices) {
 
-        gradient(I) = core.template compute<I,IdxTs...>(data,dimensions,indices);
-        GradientFiller<Diff,Scalar, 1, D, I+1>::fill(gradient,core,data,dimensions,indices);
+        gradient(I) = core.template Compute<I,IdxTs...>(data, dimensions, indices);
+        GradientFiller<Diff, Scalar, 1, D, I+1>::Fill(gradient, core, data, dimensions, indices);
 
     }
 
@@ -454,10 +442,10 @@ struct GradientFiller<Diff,Scalar, 1, D, D> {
 
     template <int Options, typename InterpolatorT, typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ inline
-    static void fill(Eigen::Matrix<Scalar,1,D,Options> & /*gradient*/,
-                     const GradientComputeCore<Diff,InterpolatorT,Scalar,1,D,Options> & /*core*/,
+    static void Fill(Eigen::Matrix<Scalar, 1, D, Options> & /*gradient*/,
+                     const GradientComputeCore<Diff, InterpolatorT, Scalar, 1, D, Options> & /*core*/,
                      const typename InterpolatorT::InputType * /*data*/,
-                     const IndexList<uint,sizeof...(IdxTs)> /*dimensions*/,
+                     const IndexList<uint, sizeof...(IdxTs)> /*dimensions*/,
                      const std::tuple<IdxTs...> & /*indices*/) { }
 
 };
@@ -465,22 +453,23 @@ struct GradientFiller<Diff,Scalar, 1, D, D> {
 template <typename Scalar, int D, DifferenceType Diff>
 struct GradientComputer {
 
-    typedef Eigen::Matrix<Scalar,1,D,Eigen::DontAlign | Eigen::RowMajor> GradientType;
+    typedef Eigen::Matrix<Scalar, 1, D, Eigen::DontAlign | Eigen::RowMajor> GradientType;
 
     template <typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ inline
-    static GradientType compute(const Scalar * data,
+    static GradientType Compute(const Scalar * data,
                                 const Eigen::Matrix<uint,D,1> & dimensions,
                                 const std::tuple<IdxTs...> & indices) {
         GradientType gradient;
-        GradientFiller<Diff,Scalar,1,D,0>::fill(gradient,
-                                                GradientComputeCore<Diff,Interpolator<Scalar>,Scalar,1,D,Eigen::DontAlign | Eigen::RowMajor>(data,
-                                                                                             internal::IndexList<uint,D>(dimensions.reverse()),
-                                                                                             internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
-                                                                                                                                     Interpolator<Scalar>()),
-                                                data,
-                                                internal::IndexList<uint,D>(dimensions.reverse()),
-                                                internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices));
+        GradientFiller<Diff, Scalar, 1, D, 0>::Fill(gradient,
+                                                    GradientComputeCore<Diff, Interpolator<Scalar>, Scalar, 1, D, Eigen::DontAlign | Eigen::RowMajor>
+                                                            (data,
+                                                             internal::IndexList<uint, D>(dimensions.reverse()),
+                                                             internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
+                                                             Interpolator<Scalar>()),
+                                                    data,
+                                                    internal::IndexList<uint, D>(dimensions.reverse()),
+                                                    internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices));
         return gradient;
     }
 
@@ -492,7 +481,7 @@ struct GradientComputer {
                                          const std::tuple<IdxTs...> & indices) {
 
         GradientType gradient;
-        GradientFiller<Diff,Scalar,1,D,0>::fill(gradient,
+        GradientFiller<Diff,Scalar,1,D,0>::Fill(gradient,
                                                 GradientComputeCore<Diff,TransformInterpolator<Transformer>,Scalar,1,D,Eigen::DontAlign | Eigen::RowMajor>(data,
                                                                                                                                                            internal::IndexList<uint,D>(dimensions.reverse()),
                                                                                                                                                            internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
@@ -513,7 +502,7 @@ struct GradientComputer {
                                                   const std::tuple<IdxTs...> & indices) {
 
         GradientType gradient;
-        GradientFiller<Diff,Scalar,1,D,0>::fill(gradient,
+        GradientFiller<Diff,Scalar,1,D,0>::Fill(gradient,
                                                 GradientComputeCore<Diff,TransformValidOnlyInterpolator<Transformer,ValidityCheck>,Scalar,1,D,Eigen::DontAlign | Eigen::RowMajor>(data,
                                                                                                                                                            internal::IndexList<uint,D>(dimensions.reverse()),
                                                                                                                                                            internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
@@ -534,11 +523,11 @@ struct GradientComputer<Eigen::Matrix<Scalar,R,1,Options>, D, Diff> {
 
     template <typename ... IdxTs>
     __NDT_CUDA_HD_PREFIX__ inline
-    static GradientType compute(const Eigen::Matrix<Scalar,R,1,Options> * data,
+    static GradientType Compute(const Eigen::Matrix<Scalar,R,1,Options> * data,
                                 const Eigen::Matrix<uint,D,1> & dimensions,
                                 const std::tuple<IdxTs...> & indices) {
         GradientType gradient;
-        GradientFiller<Diff,Scalar,R,D,0>::fill(gradient,
+        GradientFiller<Diff,Scalar,R,D,0>::Fill(gradient,
                                                 GradientComputeCore<Diff,Interpolator<Eigen::Matrix<Scalar,R,1,Options> >,Scalar,R,D,Options>(data,
                                                                                              internal::IndexList<uint,D>(dimensions.reverse()),
                                                                                              internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
@@ -556,7 +545,7 @@ struct GradientComputer<Eigen::Matrix<Scalar,R,1,Options>, D, Diff> {
                                          const Eigen::Matrix<uint,D,1> & dimensions,
                                          const std::tuple<IdxTs...> & indices) {
         Eigen::Matrix<Scalar,R,D,Options> gradient;
-        GradientFiller<Diff,Scalar,R,D,0>::fill(gradient,
+        GradientFiller<Diff,Scalar,R,D,0>::Fill(gradient,
                                                 GradientComputeCore<Diff,TransformInterpolator<Transformer>,Scalar,R,D,Options>(data,
                                                                                              internal::IndexList<uint,D>(dimensions.reverse()),
                                                                                              internal::TupleReverser<std::tuple<IdxTs...> >::Reverse(indices),
@@ -1253,7 +1242,7 @@ public:
                                       Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0> \
     inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType DiffType##Difference(const Eigen::MatrixBase<Derived> & v) const { \
         \
-        return internal::GradientComputer<T,D,internal::DiffType##Difference>::compute(data_,dimensions_,VectorToTuple(v)); \
+        return internal::GradientComputer<T,D,internal::DiffType##Difference>::Compute(data_,dimensions_,VectorToTuple(v)); \
         \
     } \
     \
@@ -1261,7 +1250,7 @@ public:
               typename std::enable_if<sizeof...(IdxTs) == D,int>::type = 0> \
     inline __NDT_CUDA_HD_PREFIX__ typename internal::GradientTraits<T,D>::GradientType DiffType##Difference(const IdxTs ... v) const { \
         \
-        return internal::GradientComputer<T,D,internal::DiffType##Difference>::template compute<IdxTs...>(data_,dimensions_,std::tuple<IdxTs...>(v...)); \
+        return internal::GradientComputer<T,D,internal::DiffType##Difference>::template Compute<IdxTs...>(data_,dimensions_,std::tuple<IdxTs...>(v...)); \
         \
     } \
     \
