@@ -173,8 +173,7 @@ inline bool BoundsCheck(const IndexList<uint,sizeof...(Tail)+1> dimensions,
 enum DifferenceType {
     BackwardDifference,
     CentralDifference,
-    ForwardDifference,
-    AdaptiveDifference
+    ForwardDifference
 };
 
 template <int I, int Diff, typename ... IdxTs>
@@ -353,36 +352,6 @@ private:
 
 
 
-
-
-
-// R-dimensional values, D-dimensional gradient
-template <typename Scalar, typename InterpolatorType, int R, int D, int Options>
-struct GradientComputeCore<AdaptiveDifference, InterpolatorType, Scalar, R, D, Options> {
-
-    template <typename ... IdxTs>
-    __NDT_CUDA_HD_PREFIX__ inline GradientComputeCore(const Eigen::Matrix<Scalar,R,1,Options> * /*data*/,
-                                                      const IndexList<uint,sizeof...(IdxTs)> /*dimensions*/,
-                                                      const std::tuple<IdxTs...> & /*indices*/,
-                                                      InterpolatorType interpolator)
-            : interpolator(interpolator) { }
-
-    template <int I, typename ... IdxTs>
-    __NDT_CUDA_HD_PREFIX__ inline
-    Eigen::Matrix<Scalar,R,1,Options> Compute(const Eigen::Matrix<Scalar,R,1,Options> * data,
-                                              const IndexList<uint,sizeof...(IdxTs)> dimensions,
-                                              const std::tuple<IdxTs...> & indices) const {
-
-        return 0.5*(interpolator.Interpolate(data,dimensions,GradientReindex<D-1-I,1,IdxTs...>::Reindex(indices)) -
-        interpolator.Interpolate(data,dimensions,GradientReindex<D-1-I,-1,IdxTs...>::Reindex(indices)));
-
-    }
-
-private:
-
-    InterpolatorType interpolator;
-
-};
 
 
 

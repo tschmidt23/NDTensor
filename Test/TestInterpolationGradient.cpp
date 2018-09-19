@@ -137,4 +137,25 @@ TEST(TransformInterpolationGradientTest, Test2DVectorValued) {
 }
 
 
+TEST(InterpolationValidOnlyGradientTest, Test3DVectorValued) {
+
+    Eigen::Vector3f data[] = { { 0.0f,  0.0f, 0.f}, { 1.0f, -1.0f, 0.f}, { 2.0f, -2.0f, 1.f}, { 3.0f, -3.0f, 1.f},
+                               { 3.0f, -3.0f, 0.f}, { 5.0f, -5.0f, 1.f}, { 4.0f, -4.0f, 1.f}, { 0.0f,  0.0f, 1.f},
+                               { 6.0f, -6.0f, 1.f}, { 7.0f, -7.0f, 1.f}, {-2.0f,  2.0f, 1.f}, {-1.0f,  1.0f, 1.f} };
+
+    Image<Eigen::Vector3f> image( 4, 3, data);
+
+    Eigen::Matrix<float, 3, 2> g = image.InterpolateValidOnlyGradient([](const Eigen::Vector3f & v) { return v(2) > 0; },
+            0.5f, 0.5f);
+
+    for (int r = 0; r <3; ++r) {
+        for (int c = 0; c < 2; ++c) {
+            ASSERT_NEAR(0.0, g(r, c), 1e-4);
+        }
+    }
+
+}
+
+
+
 } // namespace
