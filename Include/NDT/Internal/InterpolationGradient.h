@@ -1,5 +1,6 @@
 #pragma once
 
+#include <NDT/Internal/EigenHelpers.h>
 #include <NDT/Internal/IndexList.h>
 #include <NDT/Internal/ToType.h>
 
@@ -213,23 +214,35 @@ struct TransformInterpolationGradientFiller<D,D> {
 // both) along each dimension, requiring only D+1 samples.
 template <typename ValidityChecker, typename Scalar, int D, int I, typename IndexIType, typename ... IdxTs,
           typename std::enable_if<std::is_floating_point<IndexIType>::value, int>::type = 0>
-inline Scalar InterpolateValidOnlyGradientAlongOneDimension(ValidityChecker validityChecker,
-                                                            const Scalar * data,
-                                                            const Eigen::Matrix<uint,D,1> & dimensions,
-                                                            const std::tuple<IdxTs...> & indices,
-                                                            const TypeToType<IndexIType> /*indexTypeTag*/,
-                                                            const IntToType<I> /*indexTag*/) {
+inline __NDT_CUDA_HD_PREFIX__ Scalar InterpolateValidOnlyGradientAlongOneDimension(
+        ValidityChecker validityChecker,
+        const Scalar * data,
+        const Eigen::Matrix<uint, D, 1> & dimensions,
+        const std::tuple<IdxTs...> & indices,
+        const TypeToType<IndexIType> /*indexTypeTag*/,
+        const IntToType<I> /*indexTag*/) {
 
     // Nota bene: this relies on the C++ default rounding, i.e. round-towards-zero. It thus implicitly
     // assumes that indices will be positive, which should always be the case.
     typename TupleTypeSubstitute<I, int, IdxTs...>::Type roundedIndices = indices;
-    const Scalar before = InterpolateValidOnly(data, IndexList<uint,D>(dimensions.reverse()), validityChecker,
-                                      TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices));
+    float weight;
+    const Scalar before = InterpolateValidOnly(data, IndexList<uint, D>(dimensions.reverse()), weight, validityChecker,
+                                               TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices));
+
+    if (weight == 0) {
+        return ZeroType<Scalar>::Value();
+    }
 
     std::get<I>(roundedIndices)++;
 
-    return InterpolateValidOnly(data, IndexList<uint,D>(dimensions.reverse()), validityChecker,
-                                TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices)) - before;
+    const Scalar after = InterpolateValidOnly(data, IndexList<uint, D>(dimensions.reverse()), weight, validityChecker,
+                                              TupleReverser<std::tuple<IdxTs...> >::Reverse(roundedIndices));
+
+    if (weight == 0) {
+        return ZeroType<Scalar>::Value();
+    }
+
+    return after - before;
 }
 
 // In this special case, the dimension along which the interpolation gradient is taken is represented by
@@ -237,21 +250,22 @@ inline Scalar InterpolateValidOnlyGradientAlongOneDimension(ValidityChecker vali
 // interpolation slopes in the forward and backward direction.
 template <typename ValidityChecker, typename Scalar, int D, int I, typename IndexIType, typename ... IdxTs,
           typename std::enable_if<std::is_integral<IndexIType>::value, int>::type = 0>
-inline Scalar InterpolateValidOnlyGradientAlongOneDimension(ValidityChecker validityChecker,
-                                                            const Scalar * data,
-                                                            const Eigen::Matrix<uint,D,1> & dimensions,
-                                                            const std::tuple<IdxTs...> & indices,
-                                                            const TypeToType<IndexIType> /*indexTypeTag*/,
-                                                            const IntToType<I> /*indexTag*/) {
+inline __NDT_CUDA_HD_PREFIX__ Scalar InterpolateValidOnlyGradientAlongOneDimension(
+        ValidityChecker validityChecker,
+        const Scalar * data,
+        const Eigen::Matrix<uint, D, 1> & dimensions,
+        const std::tuple<IdxTs...> & indices,
+        const TypeToType<IndexIType> /*indexTypeTag*/,
+        const IntToType<I> /*indexTag*/) {
 
     std::tuple<IdxTs...> indicesCopy = indices;
     std::get<I>(indicesCopy)--;
-    const Scalar before = InterpolateValidOnly(data, IndexList<uint,D>(dimensions.reverse()), validityChecker,
+    const Scalar before = InterpolateValidOnly(data, IndexList<uint, D>(dimensions.reverse()), validityChecker,
                                                TupleReverser<std::tuple<IdxTs...> >::Reverse(indicesCopy));
 
     std::get<I>(indicesCopy) += 2;
 
-    return (InterpolateValidOnly(validityChecker, data, IndexList<uint,D>(dimensions.reverse()),
+    return (InterpolateValidOnly(validityChecker, data, IndexList<uint, D>(dimensions.reverse()),
                                  TupleReverser<std::tuple<IdxTs...> >::Reverse(indicesCopy)) - before) / 2;
 
 }

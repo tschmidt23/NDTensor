@@ -56,7 +56,7 @@ inline Scalar Interpolate(const Scalar * data,
 template <typename Scalar, typename HeadT, typename std::enable_if<std::is_integral<HeadT>::value, int>::type = 0, typename ... IdxTs>
 __NDT_CUDA_HD_PREFIX__
 inline Scalar Interpolate(const Scalar * data,
-                          const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
+                          const IndexList<uint, sizeof...(IdxTs)+1> dimensions,
                           const std::tuple<HeadT, IdxTs...> remainingIndices) {
 
     const HeadT firstIndex = std::get<0>(remainingIndices);
@@ -71,7 +71,7 @@ inline Scalar Interpolate(const Scalar * data,
 template <typename Scalar, typename ValidityCheck>
 __NDT_CUDA_HD_PREFIX__
 inline Scalar InterpolateValidOnly(const Scalar * data,
-                                   const IndexList<uint,0> dimensions,
+                                   const IndexList<uint, 0> dimensions,
                                    float & totalWeight,
                                    const float thisWeight,
                                    ValidityCheck check,
@@ -93,11 +93,11 @@ inline Scalar InterpolateValidOnly(const Scalar * data,
 template <typename Scalar, typename ValidityCheck, typename ... IdxTs>
 __NDT_CUDA_HD_PREFIX__
 inline Scalar InterpolateValidOnly(const Scalar * data,
-                                   const IndexList<uint,sizeof...(IdxTs)+1> dimensions,
+                                   const IndexList<uint, sizeof...(IdxTs)+1> dimensions,
                                    float & totalWeight,
                                    const float thisWeight,
                                    ValidityCheck check,
-                                   const std::tuple<float,IdxTs...> remainingIndices) {
+                                   const std::tuple<float, IdxTs...> remainingIndices) {
 
     const float firstIndex = std::get<0>(remainingIndices);
     const uint i = firstIndex;
@@ -138,22 +138,39 @@ inline Scalar InterpolateValidOnly(const Scalar * data,
 
 }
 
+
+template <typename Scalar, typename ValidityCheck, typename ... IdxTs>
+__NDT_CUDA_HD_PREFIX__ inline Scalar InterpolateValidOnly(const Scalar * data,
+                                                          const IndexList<uint,sizeof...(IdxTs)> dimensions,
+                                                          float & totalWeight,
+                                                          ValidityCheck check,
+                                                          std::tuple<IdxTs...> indices) {
+
+    // TODO: always float?
+    totalWeight = 0;
+
+    const Scalar totalValue = InterpolateValidOnly(data, dimensions, totalWeight, 1.f,
+                                                   check, indices);
+
+    return totalValue / totalWeight;
+
+}
+
+// this version throws away the total weight if it is not needed
 template <typename Scalar, typename ValidityCheck, typename ... IdxTs>
 __NDT_CUDA_HD_PREFIX__ inline Scalar InterpolateValidOnly(const Scalar * data,
                                                           const IndexList<uint,sizeof...(IdxTs)> dimensions,
                                                           ValidityCheck check,
                                                           std::tuple<IdxTs...> indices) {
 
-    float totalWeight(0);
-    const Scalar totalValue = InterpolateValidOnly(data,dimensions,totalWeight, 1.f,
-                                                   check, indices);
+    // TODO: always float?
+    float totalWeight;
 
-//    if (totalWeight) {
-        return totalValue / totalWeight;
-//    }
+    return InterpolateValidOnly(data, dimensions, totalWeight, check, indices);
 
-//    return 0 * totalValue;
 }
+
+
 
 
 

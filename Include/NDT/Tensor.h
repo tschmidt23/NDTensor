@@ -197,8 +197,8 @@ struct Interpolator {
 
     template <typename ... IdxTs>
     inline __NDT_CUDA_HD_PREFIX__ ReturnType Interpolate(const InputType * data,
-                                                      const IndexList<uint,sizeof...(IdxTs)> dimensions,
-                                                      const std::tuple<IdxTs...> & indices) const {
+                                                         const IndexList<uint,sizeof...(IdxTs)> dimensions,
+                                                         const std::tuple<IdxTs...> & indices) const {
 
         return internal::Interpolate(data,dimensions,indices);
 

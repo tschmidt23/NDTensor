@@ -25,6 +25,29 @@ struct DevolvingMatrixType<Scalar, 1, 1, Options> {
 
 };
 
+
+template <typename T>
+struct ZeroType {
+    static inline T Value() { return T(0); }
+};
+
+template <typename T>
+struct OneType {
+    static inline T Value() { return T(1); }
+};
+
+template <typename T, int M, int N, int O, int MR, int MC>
+struct ZeroType<Eigen::Matrix<T, M, N, O, MR, MC> > {
+    static inline Eigen::Matrix<T, M, N, O, MR, MC> Value() { return Eigen::Matrix<T, M, N, O, MR, MC>::Zero(); }
+};
+
+template <typename T, int M, int N, int O, int MR, int MC>
+struct OneType<Eigen::Matrix<T, M, N, O, MR, MC> > {
+    static inline Eigen::Matrix<T, M, N, O, MR, MC> Value() { return Eigen::Matrix<T, M, N, O, MR, MC>::Ones(); }
+};
+
+
+
 } // namespace internal
 
 } // namespace NDT
