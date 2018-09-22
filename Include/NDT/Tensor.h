@@ -1329,11 +1329,11 @@ public:
         return this->Data();
     }
 
-    inline const T * const cbegin() const {
+    inline const T * cbegin() const {
         return this->Data();
     }
 
-    inline const T * const begin() const {
+    inline const T * begin() const {
         return this->cbegin();
     }
 
@@ -1341,11 +1341,11 @@ public:
         return this->Data() + this->Count();
     }
 
-    inline const T * const cend() const {
+    inline const T * cend() const {
         return this->Data() + this->Count();
     }
 
-    inline const T * const end() const {
+    inline const T * end() const {
         return this->cend();
     }
 

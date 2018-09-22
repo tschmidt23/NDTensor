@@ -109,7 +109,7 @@ TEST(TransformInterpolationGradientTest, Test2DVectorValued) {
             ASSERT_EQ(g2(i,j), g(i,j));
         }
     }
-//
+
 //    g = image.InterpolationGradient(0.5f, 1.25f);
 //
 //    // tx = 0.5
