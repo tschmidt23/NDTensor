@@ -629,7 +629,7 @@ struct InitializeDimensions;
 template <typename HeadArgType, typename ... TailArgTypes>
 struct InitializeDimensions<HeadArgType, TailArgTypes...> {
 
-    static inline Eigen::Matrix<uint, sizeof...(TailArgTypes), 1> Initialize(HeadArgType head, TailArgTypes ... tails) {
+    static inline __NDT_CUDA_HD_PREFIX__ Eigen::Matrix<uint, sizeof...(TailArgTypes), 1> Initialize(HeadArgType head, TailArgTypes ... tails) {
         return (Eigen::Matrix<uint,sizeof...(TailArgTypes),1>() << head, InitializeDimensions<TailArgTypes...>::Initialize(tails...)).finished();
     }
 
@@ -638,7 +638,7 @@ struct InitializeDimensions<HeadArgType, TailArgTypes...> {
 template <typename HeadArgType, typename TailArgType>
 struct InitializeDimensions<HeadArgType, TailArgType> {
 
-    static inline Eigen::Matrix<uint, 1, 1> Initialize(HeadArgType head, TailArgType tail) {
+    static inline __NDT_CUDA_HD_PREFIX__ Eigen::Matrix<uint, 1, 1> Initialize(HeadArgType head, TailArgType tail) {
         return Eigen::Matrix<uint, 1, 1>(head);
     }
 
