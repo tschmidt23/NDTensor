@@ -48,6 +48,16 @@ public:
         return tensor_.Data()[d0 * strides_[0] + d1 * strides_[1] + d2 * strides_[2]];
     }
 
+    template <int D2 = D, typename std::enable_if<D2 == 4, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ const T & Element(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) const {
+        return tensor_.Data()[d0 * strides_[0] + d1 * strides_[1] + d2 * strides_[2] + d3 * strides_[3]];
+    }
+
+    template <int D2 = D, typename std::enable_if<D2 == 4 && !Const, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ T & Element(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3) {
+        return tensor_.Data()[d0 * strides_[0] + d1 * strides_[1] + d2 * strides_[2] + d3 * strides_[3]];
+    }
+
     template <typename Derived,
               typename std::enable_if<internal::IsIntegralVectorType<Derived, D>::Value, int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ T & Element(const Eigen::MatrixBase<Derived> & indices) {
