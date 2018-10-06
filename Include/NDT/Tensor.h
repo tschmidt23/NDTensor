@@ -136,14 +136,14 @@ struct AutomaticAllocator<T,DeviceResident> {
 
 // -=-=-=- generic indexing -=-=-=-
 template <typename IdxT, typename DimT, int D, typename std::enable_if<(D > 1), int>::type = 0>
-inline __NDT_CUDA_HD_PREFIX__ std::size_t OffsetXD(const IndexList<IdxT,D> dimIndices, const IndexList<DimT,D-1> dimSizes) {
+inline __NDT_CUDA_HD_PREFIX__ std::size_t OffsetXD(const IndexList<IdxT, D> dimIndices, const IndexList<DimT, D-1> dimSizes) {
 
     return dimIndices.head + dimSizes.head*OffsetXD(dimIndices.tail,dimSizes.tail);
 
 }
 
 template <typename IdxT, typename DimT>
-inline __NDT_CUDA_HD_PREFIX__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIndices, const IndexList<DimT,0> dimSizes) {
+inline __NDT_CUDA_HD_PREFIX__ std::size_t OffsetXD(const IndexList<IdxT, 1> dimIndices, const IndexList<DimT, 0> dimSizes) {
 
     return dimIndices.head;
 
@@ -151,7 +151,7 @@ inline __NDT_CUDA_HD_PREFIX__ std::size_t OffsetXD(const IndexList<IdxT,1> dimIn
 
 template <typename BorderT>
 __NDT_CUDA_HD_PREFIX__
-inline bool BoundsCheck(const IndexList<uint,0> /*dimensions*/,
+inline bool BoundsCheck(const IndexList<uint, 0> /*dimensions*/,
                         const std::tuple<> /*remainingPositions*/,
                         const BorderT /*borderLow*/,
                         const BorderT /*borderHight*/) {
@@ -160,14 +160,14 @@ inline bool BoundsCheck(const IndexList<uint,0> /*dimensions*/,
 
 template <typename BorderT, typename Head, typename ... Tail>
 __NDT_CUDA_HD_PREFIX__
-inline bool BoundsCheck(const IndexList<uint,sizeof...(Tail)+1> dimensions,
+inline bool BoundsCheck(const IndexList<uint, sizeof...(Tail)+1> dimensions,
                         const std::tuple<Head, Tail...> remainingPositions,
                         const BorderT borderLow,
                         const BorderT borderHigh) {
 
     const Head firstPosition = std::get<0>(remainingPositions);
     return (firstPosition >= borderLow && firstPosition <= dimensions.head - 1 - borderHigh) &&
-            BoundsCheck(dimensions.tail,GetTail(remainingPositions),borderLow,borderHigh);
+            BoundsCheck(dimensions.tail, GetTail(remainingPositions), borderLow, borderHigh);
 
 }
 
@@ -1146,17 +1146,21 @@ public:
     }
 
     template <typename BorderT, typename Derived,
-              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
-                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
+              typename std::enable_if<internal::IsVectorType<Derived, D>::Value, int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const Eigen::MatrixBase<Derived> & pos, BorderT border) const {
-        return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),VectorToTuple(pos),border,border);
+        return internal::BoundsCheck(internal::IndexList<DimT, D>(dimensions_), VectorToTuple(pos), border, border);
+    }
+
+    template <typename BorderT, typename Derived,
+            typename std::enable_if<internal::IsVectorType<Derived, D>::Value, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const Eigen::MatrixBase<Derived> & pos, BorderT borderLow, BorderT borderHigh) const {
+        return internal::BoundsCheck(internal::IndexList<DimT, D>(dimensions_), VectorToTuple(pos), borderLow, borderHigh);
     }
 
     template <typename Derived,
-              typename std::enable_if<Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
-                                      Eigen::internal::traits<Derived>::ColsAtCompileTime == 1, int>::type = 0>
+              typename std::enable_if<internal::IsVectorType<Derived, D>::Value, int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ bool InBounds(const Eigen::MatrixBase<Derived> & pos) const {
-        return internal::BoundsCheck(internal::IndexList<DimT,D>(dimensions_),VectorToTuple(pos),0,0);
+        return internal::BoundsCheck(internal::IndexList<DimT, D>(dimensions_), VectorToTuple(pos), 0, 0);
     }
 
 #define __NDT_TENSOR_DIFFERENCE_BOUNDS_DEFINITION__(DiffType) \
