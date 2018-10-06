@@ -18,6 +18,7 @@
 
 #include <NDT/Internal/ConstQualifier.h>
 #include <NDT/Internal/EigenHelpers.h>
+#include <NDT/Internal/EnableIfHelpers.h>
 #include <NDT/Internal/IndexList.h>
 #include <NDT/Internal/Interpolation.h>
 #include <NDT/Internal/InterpolationGradient.h>
@@ -569,29 +570,6 @@ struct DifferenceTypeTraits<ForwardDifference> {
     static constexpr int borderHigh = 1;
 };
 
-template <typename Derived, int D>
-struct IsVectorType {
-
-    static constexpr bool Value = Eigen::internal::traits<Derived>::RowsAtCompileTime == D &&
-                                  Eigen::internal::traits<Derived>::ColsAtCompileTime == 1;
-
-};
-
-template <typename Derived, int D>
-struct IsRealVectorType {
-
-    static constexpr bool Value = IsVectorType<Derived,D>::Value &&
-                                  std::is_arithmetic<typename Eigen::internal::traits<Derived>::Scalar>::value;
-
-};
-
-template <typename Derived, int D>
-struct IsIntegralVectorType {
-
-    static constexpr bool Value = IsVectorType<Derived,D>::Value &&
-                                  std::is_integral<typename Eigen::internal::traits<Derived>::Scalar>::value;
-
-};
 
 template <typename ... IdxTs>
 struct IndexTypePrinter {

@@ -147,4 +147,57 @@ inline T Dot(const Tensor<1, T, HostResident, ConstA> & vectorA,
     return std::inner_product(vectorA.Data(), vectorA.Data() + vectorA.Count(), vectorB.Data(), internal::ZeroType<T>::Value());
 }
 
+template <uint DIn, typename T, Residency R, bool Const, typename Derived>
+inline
+typename std::enable_if<internal::IsIntegralVectorType<Derived, -1>::Value,
+        typename NDT::Tensor<Eigen::internal::traits<Derived>::RowsAtCompileTime, T, R, Const> >::type
+Reshape(Tensor<DIn, T, R, Const> & tensor, const Eigen::MatrixBase<Derived> & dimensionSpec) {
+
+    constexpr int DOut = Eigen::MatrixBase<Derived>::RowsAtCompileTime;
+    using DimT = typename Tensor<DOut, T, R, Const>::DimT;
+
+    int unspecifiedDimension = -1;
+    int product = 1;
+
+    Eigen::Matrix<DimT, DOut, 1> dimensions = dimensionSpec.template cast<DimT>();
+
+    for (int i = 0; i < DOut; ++i) {
+
+        if (dimensionSpec(i) < 0) {
+
+            if (unspecifiedDimension >= 0) {
+                throw std::runtime_error("only one dimension can be left unspecified");
+            }
+
+            unspecifiedDimension = i;
+
+        } else {
+
+            product *= dimensions(i);
+
+        }
+
+    }
+
+    if (unspecifiedDimension >= 0) {
+
+        if (tensor.Count() % product) {
+
+            throw std::runtime_error("not evenly divisible");
+
+        }
+
+        dimensions(unspecifiedDimension) = tensor.Count() / product;
+
+    } else if (product != tensor.Count()) {
+
+        throw std::runtime_error("specified dimensions yields different tensor size (" +
+            std::to_string(product) + " vs " + std::to_string(tensor.Count()) + ")");
+
+    }
+
+    return Tensor<DOut, T, R, Const>(dimensions, tensor.Data());
+
+}
+
 } // namespace NDT

@@ -242,4 +242,28 @@ TEST(UtilTest, TestDot) {
 
 }
 
+TEST(UtilTest, TestReshape) {
+
+    short data[16] = {  0, 1, 2, 3,
+                        4, 5, 6, 7,
+                        8, 9, 10, 11,
+                        12, 13, 14, 15 };
+
+    NDT::Tensor<1, short> tensor1D(16, data);
+
+    NDT::Tensor<2, short> tensor2D = NDT::Reshape(tensor1D, Eigen::Vector2i(4, 4));
+
+    ASSERT_EQ(4, tensor2D.DimensionSize(0));
+    ASSERT_EQ(4, tensor2D.DimensionSize(1));
+
+    NDT::Tensor<3, short> tensor3D = NDT::Reshape(tensor2D, Eigen::Vector3i(2, -1, 2));
+
+    ASSERT_EQ(2, tensor3D.DimensionSize(0));
+    ASSERT_EQ(4, tensor3D.DimensionSize(1));
+    ASSERT_EQ(2, tensor3D.DimensionSize(2));
+
+}
+
+
+
 }
