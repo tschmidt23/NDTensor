@@ -1387,6 +1387,7 @@ public:
     ManagedTensor & operator=(ManagedTensor && other) {
         this->dimensions_ = other.dimensions_;
         other.dimensions_ = Eigen::Matrix<DimT,D,1>::Zero();
+        internal::AutomaticAllocator<T,R>::Deallocate(this->data_);
         this->data_ = other.data_;
         other.data_ = nullptr;
     }
