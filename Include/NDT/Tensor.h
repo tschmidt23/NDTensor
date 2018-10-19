@@ -941,6 +941,18 @@ public:
                 internal::IndexList<IdxT,4>(Eigen::Matrix<uint,4,1>(dimensions_[0],dimensions_[1],dimensions_[2],dimensions_[3])))];
     }
 
+    template <int D2 = D, typename std::enable_if<D2 == 6, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ const T & Element(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3, const IdxT d4, const IdxT d5) const {
+        return data_[internal::OffsetXD<IdxT, DimT, 6>(internal::IndexList<IdxT, 6>((Eigen::Matrix<uint, 6, 1>() << d0, d1, d2, d3, d4, d5).finished()),
+                internal::IndexList<IdxT, 5>((Eigen::Matrix<uint, 5, 1>() << dimensions_[0], dimensions_[1], dimensions_[2], dimensions_[3], dimensions_[4]).finished()))];
+    }
+
+    template <int D2 = D, typename std::enable_if<D2 == 6, int>::type = 0>
+    inline __NDT_CUDA_HD_PREFIX__ T & Element(const IdxT d0, const IdxT d1, const IdxT d2, const IdxT d3, const IdxT d4, const IdxT d5) {
+        return data_[internal::OffsetXD<IdxT, DimT, 6>(internal::IndexList<IdxT, 6>((Eigen::Matrix<uint, 6, 1>() << d0, d1, d2, d3, d4, d5).finished()),
+                internal::IndexList<IdxT, 5>((Eigen::Matrix<uint, 5, 1>() << dimensions_[0], dimensions_[1], dimensions_[2], dimensions_[3], dimensions_[4]).finished()))];
+    }
+
     template <int D2 = D, typename std::enable_if<D2 == 2, int>::type = 0>
     inline __NDT_CUDA_HD_PREFIX__ DimT offset(const IdxT d0, const IdxT d1) const {
         return internal::OffsetXD<IdxT,DimT,2>(internal::IndexList<IdxT,2>(Eigen::Matrix<uint,2,1>(d0,d1)),
