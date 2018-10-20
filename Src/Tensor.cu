@@ -1,6 +1,6 @@
 #include <NDT/Tensor.h>
 
-#include <NDT/Util.h>
+//#include <NDT/Util.h>
 
 #ifndef __NDT_NO_CUDA__
 
