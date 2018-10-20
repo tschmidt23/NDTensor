@@ -1,5 +1,7 @@
 #include <NDT/Tensor.h>
 
+#include <NDT/Util.h>
+
 #ifndef __NDT_NO_CUDA__
 
 namespace NDT {
